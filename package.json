@@ -1,6 +1,6 @@
 {
   "name": "@wy51ai/edulab",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A Claude Code plugin: a collection of education skills that turn academic problems into interactive lesson web pages. First skill edu-solid-geometry solves solid geometry (coordinate system + vector method) and outputs a single-page HTML with a 3D demo and step-by-step analysis.",
   "keywords": [
     "claude-code",
