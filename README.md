@@ -51,20 +51,20 @@ Solves one solid geometry problem into a self-contained interactive lesson page.
 
 ### Dependency
 
-The compute core `lib/geometry_kernel.py` depends on **sympy**. On some machines the default `python3` may be broken — use an interpreter that has sympy, e.g. `/opt/homebrew/bin/python3.11`:
+The compute core `lib/geometry_kernel.py` depends on **sympy**. Use any `python3` that can import sympy:
 
 ```bash
-/opt/homebrew/bin/python3.11 -m pip install --user sympy   # if sympy is missing
+python3 -m pip install sympy   # if sympy is missing
 ```
 
 ### Generate from the command line (without Claude)
 
 ```bash
 cd skills/edu-solid-geometry
-python3.11 scripts/generate.py cube   ./cube.html     # cube · line-plane angle
-python3.11 scripts/generate.py box    ./box.html      # cuboid · volume
-python3.11 scripts/generate.py random 7 ./random.html # random problem (seed=7)
-python3.11 lib/geometry_kernel.py                     # kernel built-in self-check
+python3 scripts/generate.py cube   ./cube.html     # cube · line-plane angle
+python3 scripts/generate.py box    ./box.html      # cuboid · volume
+python3 scripts/generate.py random 7 ./random.html # random problem (seed=7)
+python3 lib/geometry_kernel.py                     # kernel built-in self-check
 ```
 
 > If you don't pass an output path, it writes to the **current working directory (cwd)**.

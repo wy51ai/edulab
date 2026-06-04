@@ -19,9 +19,9 @@ description: >-
 形态与 `template/lesson.html` 一致。
 
 ## 依赖（重要）
-计算核心 `lib/geometry_kernel.py` 依赖 **sympy**。本机默认 `python3` 可能损坏，
-请用带 sympy 的解释器运行脚本，例如 `/opt/homebrew/bin/python3.11`。
-（若环境缺 sympy：`<python> -m pip install --user sympy`。）
+计算核心 `lib/geometry_kernel.py` 依赖 **sympy**。运行脚本前先确认有一个能 import sympy 的
+`python3`：跑 `python3 -c "import sympy"`，若报错则 `python3 -m pip install sympy`
+（或换一个已装 sympy 的解释器）。下文命令里的 `python3` 均指这个解释器。
 
 ## 工作流程
 
@@ -41,7 +41,7 @@ description: >-
 
 可先在命令行跑 kernel 验证答案，例如：
 ```bash
-/opt/homebrew/bin/python3.11 lib/geometry_kernel.py    # 内置样例自检
+python3 lib/geometry_kernel.py    # 内置样例自检
 ```
 
 ### 第 3 步：组装 lesson data 并注入模板
@@ -74,13 +74,13 @@ generate.render_html(data, out)
 `generate.py` 可直接出已注册的题；**不传路径时默认写到当前工作目录（cwd）**，也可显式给 cwd 下的文件名
 （用技能目录里的 `scripts/generate.py`，输出落在 cwd）：
 ```bash
-python3.11 <技能目录>/scripts/generate.py cube ./cube.html
-python3.11 <技能目录>/scripts/generate.py box  ./box.html
+python3 <技能目录>/scripts/generate.py cube ./cube.html
+python3 <技能目录>/scripts/generate.py box  ./box.html
 ```
 
 **随机出题**：`generate.py random <seed> [输出.html]`，内部用 `kernel.is_clean(...)` 判答案规整、不过重抽：
 ```bash
-python3.11 <技能目录>/scripts/generate.py random 7 ./random.html   # 不给路径则默认 ./random.html(cwd)
+python3 <技能目录>/scripts/generate.py random 7 ./random.html   # 不给路径则默认 ./random.html(cwd)
 ```
 扩展随机题型时沿用"随机参数 → 求解 → is_clean 不过就重抽"。
 

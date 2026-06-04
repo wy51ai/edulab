@@ -51,20 +51,20 @@ npx skills add wy51ai/edulab
 
 ### 依赖
 
-计算核心 `lib/geometry_kernel.py` 依赖 **sympy**。本机默认 `python3` 可能损坏，请用带 sympy 的解释器，例如 `/opt/homebrew/bin/python3.11`：
+计算核心 `lib/geometry_kernel.py` 依赖 **sympy**。用任意一个能 import sympy 的 `python3` 即可：
 
 ```bash
-/opt/homebrew/bin/python3.11 -m pip install --user sympy   # 若缺 sympy
+python3 -m pip install sympy   # 若缺 sympy
 ```
 
 ### 命令行直接生成（不经过 Claude）
 
 ```bash
 cd skills/edu-solid-geometry
-python3.11 scripts/generate.py cube   ./cube.html     # 正方体·线面角
-python3.11 scripts/generate.py box    ./box.html      # 长方体·体积
-python3.11 scripts/generate.py random 7 ./random.html # 随机出题（seed=7）
-python3.11 lib/geometry_kernel.py                     # kernel 内置样例自检
+python3 scripts/generate.py cube   ./cube.html     # 正方体·线面角
+python3 scripts/generate.py box    ./box.html      # 长方体·体积
+python3 scripts/generate.py random 7 ./random.html # 随机出题（seed=7）
+python3 lib/geometry_kernel.py                     # kernel 内置样例自检
 ```
 
 > 不传输出路径时，默认写到**当前工作目录（cwd）**。
