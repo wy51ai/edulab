@@ -10,6 +10,8 @@ edulab 是一个 [Claude Code](https://claude.com/claude-code) 插件（plugin +
 
 ## 效果预览
 
+![edulab 效果预览 —— 线面角教学网页](demo1.png)
+
 根目录的 [index.html](index.html) 是一个成品样例（正四棱锥·线面角），直接用浏览器打开即可查看：
 
 - **左侧**：题面 / 答案 / 分步解析，公式用 MathJax 渲染

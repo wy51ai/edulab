@@ -10,6 +10,8 @@ The first skill, **edu-solid-geometry**, solves solid geometry problems using th
 
 ## Preview
 
+![edulab demo — line-plane angle lesson page](demo1.png)
+
 [index.html](index.html) in the project root is a finished sample (regular quadrilateral pyramid · line-plane angle). Open it directly in a browser:
 
 - **Left**: problem statement / answer / step-by-step analysis, formulas rendered with MathJax
