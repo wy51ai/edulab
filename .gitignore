@@ -12,6 +12,7 @@ output/
 .vscode/
 *.log
 *.tmp
+*.baiduyun.uploading.cfg
 
 # Python
 __pycache__/

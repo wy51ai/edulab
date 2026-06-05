@@ -1,7 +1,7 @@
 {
   "name": "edulab",
   "version": "0.1.0",
-  "description": "教育类技能集合：把学科问题转成可交互的教学网页。首个技能 edu-solid-geometry 负责立体几何解题（建系+向量法），输出自带 3D 演示与分步解析的单页 HTML。",
+  "description": "教育类技能集合：把学科问题转成可交互的教学网页。包含 edu-solid-geometry 立体几何解题，以及 edu-higher-math 高等数学二重积分、曲面积分/通量、微分方程教学页。",
   "author": {
     "name": "WY"
   }
