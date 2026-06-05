@@ -24,7 +24,7 @@
     "url": "git+https://github.com/wy51ai/edulab.git"
   },
   "author": "WY (@akokoi1) (https://x.com/akokoi1)",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "files": [
     "skills/**/*",
     "!skills/**/__pycache__/**",
@@ -34,7 +34,8 @@
     "index.html",
     "README.md",
     "README.zh-CN.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "publishConfig": {
     "access": "public"
