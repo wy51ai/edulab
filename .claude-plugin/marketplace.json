@@ -10,7 +10,7 @@
         "source": "github",
         "repo": "wy51ai/edulab"
       },
-      "description": "教育类技能集合：把学科问题转成可交互教学网页。包含 edu-solid-geometry 立体几何，以及 edu-higher-math 高等数学（二重积分、曲面积分/通量、微分方程）。"
+      "description": "教育类技能集合：把学科问题转成可交互教学网页。包含 edu-solid-geometry 立体几何、edu-higher-math 高等数学，以及 edu-signals-control 信号与控制负反馈传递函数。"
     }
   ]
 }

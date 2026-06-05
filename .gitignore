@@ -8,6 +8,7 @@ triage/
 plan/
 docs/
 output/
+skills/**/output/
 .idea/
 .vscode/
 *.log

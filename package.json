@@ -1,7 +1,7 @@
 {
   "name": "@wy51ai/edulab",
-  "version": "0.1.4",
-  "description": "A Claude Code plugin: education skills that turn academic problems into interactive lesson web pages. Includes edu-solid-geometry for 3D geometry and edu-higher-math for calculus, surface flux, and first-order differential equations.",
+  "version": "0.2.0",
+  "description": "A Claude Code plugin: education skills that turn academic problems into interactive lesson web pages. Includes edu-solid-geometry for 3D geometry, edu-higher-math for calculus and ODEs, and edu-signals-control for feedback transfer functions.",
   "keywords": [
     "claude-code",
     "claude-code-plugin",
@@ -15,6 +15,12 @@
     "surface-integral",
     "differential-equations",
     "ode",
+    "signals-control",
+    "control-systems",
+    "feedback",
+    "transfer-function",
+    "bode",
+    "laplace",
     "math",
     "geometry",
     "threejs",

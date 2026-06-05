@@ -10,6 +10,8 @@ edulab 是一个 [Claude Code](https://claude.com/claude-code) 插件（plugin +
 
 新增技能 **edu-higher-math** 把同样的"精确计算 + 交互教学页"模式扩展到高等数学：二重积分、极坐标积分、曲面积分/通量、一阶常微分方程。输出 MathJax 分步解析 + SVG 交互图示（积分区域、曲面/向量场、斜率场）。
 
+新增技能 **edu-signals-control** 面向信号与控制入门反馈题：单环负反馈、闭环传递函数、高环路增益极限，例如 `H(s)=kA/(1+kAF(s)) -> 1/F(s)`。输出反馈框图、环路增益滑块和幅相采样图示。
+
 ## 效果预览
 
 ![edulab 效果预览 —— 线面角教学网页](demo1.png)
@@ -51,6 +53,7 @@ npx skills update
 |---|---|---|
 | `edu-solid-geometry` | 立体几何，建系 + 向量法 | Three.js 3D 模型，分步高亮 |
 | `edu-higher-math` | 二重积分、曲面积分/通量、一阶微分方程 | SVG 积分区域、曲面/向量场、斜率场 |
+| `edu-signals-control` | 负反馈传递函数、高环路增益极限 | SVG 反馈框图、环路增益滑块、幅相采样 |
 
 ## 技能：edu-solid-geometry
 
@@ -112,10 +115,34 @@ python3 lib/calculus_kernel.py
 
 首版不承诺任意 OCR 读题、覆盖所有高数题型、PDE、闭曲面定理自动选择，或"任何微分方程都能解"。
 
+## 技能：edu-signals-control
+
+把一道信号与控制反馈题解成一个自包含的交互教学网页。首版覆盖：
+
+| 主题 | 精确求解 | 图示 |
+|---|---|---|
+| 单环负反馈 | `H(s)=G(s)/(1+G(s)B(s))` | 可高亮信号路径的反馈框图 |
+| 高环路增益极限 | `k -> infinity` 这类符号极限 | 环路增益滑块展示 `1/(kA)` 项变小 |
+| 一阶反馈网络 | 例如 `F(s)=1/(tau*s+1)` | 闭环响应与高增益近似的幅值采样 |
+
+**触发词**：信号与系统、自动控制、反馈框图、闭环传递函数、传递函数、拉普拉斯域、k趋于无穷、运放负反馈；signals and systems, control systems, feedback block diagram, transfer function, high loop gain, Bode sample 等。
+
+### 命令行直接生成
+
+```bash
+cd skills/edu-signals-control
+python3 scripts/generate.py feedback-limit ./feedback-limit.html
+python3 scripts/generate.py first-order-feedback ./first-order-feedback.html
+python3 scripts/generate.py random 7 ./signals-control-random.html
+python3 lib/control_kernel.py
+```
+
+首版不承诺任意框图自动化简、MIMO 系统、非线性系统、根轨迹设计、控制器整定或稳定性证明自动化。
+
 ## 工作原理
 
 1. **得到 problem spec** —— 把文字 / 图片 / 随机入口归一成结构化数据（主题、已知条件、所求、语言）。
-2. **kernel 精确计算** —— SymPy 算出精确坐标、向量、积分、通量或微分方程解，绝不心算。
+2. **kernel 精确计算** —— SymPy 算出精确坐标、向量、积分、通量、微分方程解、传递函数或反馈极限，绝不心算。
 3. **组装并注入模板** —— 把 `lesson` / `steps` / `model` 或 `visual` 数据注入对应技能的 HTML 模板；图示采样与答案同源。
 4. **自检** —— kernel 答案 == 答案卡 == 末步骤展示值；本地静态服务 + 预览检查无报错、公式与高亮正常。
 5. **交付** —— 成品写到用户当前工作目录，命名形如 `solution-<题目简述>.html`。
@@ -139,10 +166,18 @@ edulab/
     │   └── references/
     │       ├── problem-schema.md   # 数据格式
     │       └── conventions.md      # 建系约定、解法配方、自检
-    └── edu-higher-math/
+    ├── edu-higher-math/
         ├── SKILL.md
         ├── template/lesson.html
         ├── lib/calculus_kernel.py
+        ├── scripts/generate.py
+        └── references/
+            ├── problem-schema.md
+            └── conventions.md
+    └── edu-signals-control/
+        ├── SKILL.md
+        ├── template/lesson.html
+        ├── lib/control_kernel.py
         ├── scripts/generate.py
         └── references/
             ├── problem-schema.md
@@ -154,6 +189,7 @@ edulab/
 - **加题型**：在 `geometry_kernel.py` 加求解函数（见 `references/conventions.md` 配方表），在 `generate.py` 加一个 `build_*`。
 - **加几何体**：在 `geometry_kernel.py` 加坐标构建函数，在 `bodies.py` 加棱拓扑。
 - **加高数主题**：在 `calculus_kernel.py` 增加精确求解与采样函数，再在 `skills/edu-higher-math/scripts/generate.py` 注册 builder。
+- **加信号/控制主题**：在 `control_kernel.py` 增加精确传递函数求解与采样函数，再在 `skills/edu-signals-control/scripts/generate.py` 注册 builder。
 
 ## License
 

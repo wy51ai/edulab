@@ -5,6 +5,7 @@
 # Internal development samples (not needed by consumers)
 skills/**/output/
 skills/edu-higher-math/output/
+skills/edu-signals-control/output/
 
 # Editor / OS cruft
 .idea/
