@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Higher Mathematics Lesson</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #4b5563;
+      --line: #d8dee8;
+      --panel: #ffffff;
+      --page: #f4f7fb;
+      --primary: #0077b6;
+      --primary-strong: #005f8f;
+      --accent: #b5179e;
+      --gold: #d97706;
+      --green: #047857;
+      --soft-blue: #e8f4fb;
+      --soft-magenta: #fae8f6;
+      --shadow: 0 18px 46px rgba(17, 24, 39, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--page);
+    }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(330px, 440px) minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .lesson-panel,
+    .visual-panel {
+      min-width: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .lesson-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      max-height: calc(100vh - 24px);
+    }
+
+    .lesson-header {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f9fbfd 100%);
+    }
+
+    .meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-strong);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+      margin-bottom: 10px;
+    }
+
+    .meta::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 99px;
+      background: var(--primary);
+      box-shadow: 0 0 0 4px rgba(0, 119, 182, 0.14);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.45;
+      font-weight: 760;
+    }
+
+    .answer-card {
+      margin: 14px 18px 0;
+      padding: 14px;
+      border: 1px solid #b7def0;
+      border-radius: 12px;
+      background: var(--soft-blue);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .answer-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .answer-card strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .answer-value {
+      min-width: 82px;
+      max-width: 190px;
+      overflow-wrap: anywhere;
+      padding: 10px 12px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 800;
+      color: white;
+      background: var(--ink);
+    }
+
+    .step-card {
+      min-height: 0;
+      overflow: auto;
+      padding: 18px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary) #e5e7eb;
+    }
+
+    .step-index {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 99px;
+      color: #fff;
+      background: var(--primary);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .step-title {
+      margin: 0 0 12px;
+      color: var(--primary-strong);
+      font-size: 18px;
+      line-height: 1.3;
+      font-weight: 760;
+    }
+
+    .step-content {
+      color: #1f2937;
+      font-size: 15px;
+      line-height: 1.72;
+    }
+
+    .step-content p {
+      margin: 0 0 10px;
+    }
+
+    mjx-container {
+      color: inherit;
+    }
+
+    .answer-value mjx-container {
+      color: #ffffff;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 14px 18px 18px;
+      border-top: 1px solid var(--line);
+      background: #fbfcfe;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      min-height: 42px;
+      color: var(--ink);
+      background: #fff;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      color: #fff;
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+
+    .btn:disabled {
+      opacity: 0.46;
+      cursor: not-allowed;
+    }
+
+    .visual-panel {
+      position: relative;
+      min-height: calc(100vh - 24px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .visual-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #ffffff;
+    }
+
+    .visual-header h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .visual-kind {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .stage-wrap {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background:
+        linear-gradient(90deg, rgba(17, 24, 39, 0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(17, 24, 39, 0.035) 1px, transparent 1px),
+        #f9fbfd;
+      background-size: 28px 28px;
+    }
+
+    #stage {
+      width: min(100%, 920px);
+      height: min(70vh, 660px);
+      min-height: 380px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #ffffff;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+    }
+
+    .layers {
+      padding: 12px 18px 16px;
+      border-top: 1px solid var(--line);
+      background: #ffffff;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .layers-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-right: 2px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 11px;
+      color: var(--muted);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .chip.active {
+      color: var(--primary-strong);
+      border-color: #92cde8;
+      background: var(--soft-blue);
+    }
+
+    .axis { stroke: #94a3b8; stroke-width: 1.4; }
+    .grid { stroke: #e2e8f0; stroke-width: 1; }
+    .domain { fill: rgba(0, 119, 182, 0.13); stroke: var(--primary); stroke-width: 2; }
+    .sample-cell { fill: rgba(181, 23, 158, 0.13); stroke: rgba(181, 23, 158, 0.45); }
+    .sample-dot { fill: var(--accent); }
+    .ring { fill: none; stroke: var(--primary); stroke-width: 2; opacity: 0.78; }
+    .surface { fill: rgba(0, 119, 182, 0.16); stroke: rgba(0, 95, 143, 0.6); stroke-width: 1.2; }
+    .normal { stroke: var(--gold); stroke-width: 2.4; marker-end: url(#arrow-gold); }
+    .field { stroke: var(--accent); stroke-width: 2.2; marker-end: url(#arrow-magenta); }
+    .slope { stroke: #64748b; stroke-width: 1.6; stroke-linecap: round; }
+    .solution { fill: none; stroke: var(--green); stroke-width: 3.6; }
+    .initial { fill: #ffffff; stroke: var(--green); stroke-width: 3; }
+    .label { fill: var(--muted); font-size: 13px; font-weight: 700; }
+    .answer-note { fill: var(--ink); font-size: 18px; font-weight: 850; }
+
+    @media (max-width: 860px) {
+      body {
+        grid-template-columns: 1fr;
+        padding: 8px;
+      }
+
+      .lesson-panel,
+      .visual-panel {
+        max-height: none;
+        min-height: 0;
+        border-radius: 14px;
+      }
+
+      .visual-panel {
+        min-height: 560px;
+      }
+
+      #stage {
+        height: 520px;
+        min-height: 360px;
+      }
+
+      .answer-card {
+        grid-template-columns: 1fr;
+      }
+
+      .answer-value {
+        justify-self: start;
+      }
+    }
+  </style>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <section class="lesson-panel" aria-label="Lesson explanation">
+    <header class="lesson-header">
+      <div class="meta" id="lesson-meta"></div>
+      <h1 id="lesson-title"></h1>
+    </header>
+
+    <div class="answer-card">
+      <div>
+        <span id="answer-label"></span>
+        <strong id="answer-title"></strong>
+      </div>
+      <div class="answer-value" id="answer-value"></div>
+    </div>
+
+    <main class="step-card" id="step-card" tabindex="0">
+      <div class="step-index" id="step-index"></div>
+      <h2 class="step-title" id="step-title"></h2>
+      <div class="step-content" id="step-content"></div>
+    </main>
+
+    <nav class="controls" aria-label="Step controls">
+      <button class="btn" id="prev-btn" type="button"></button>
+      <button class="btn primary" id="next-btn" type="button"></button>
+    </nav>
+  </section>
+
+  <section class="visual-panel" aria-label="Interactive visualization">
+    <header class="visual-header">
+      <div>
+        <div class="visual-kind" id="visual-kind"></div>
+        <h2 id="visual-title"></h2>
+      </div>
+    </header>
+    <div class="stage-wrap">
+      <svg id="stage" viewBox="0 0 720 480" role="img" aria-label="Calculus visualization"></svg>
+    </div>
+    <div class="layers" id="layers"></div>
+  </section>
+
+  <script id="lesson-data" type="application/json">__LESSON_DATA__</script>
+  <script>
+    const DATA = JSON.parse(document.getElementById('lesson-data').textContent);
+    const ui = Object.assign({
+      previous: 'Previous',
+      next: 'Next',
+      finish: 'Finish',
+      stepTemplate: 'Step {current} / {total}',
+      visualLabel: 'Interactive visual',
+      layersLabel: 'Layers'
+    }, DATA.lesson.ui || {});
+
+    let current = 0;
+    const stage = document.getElementById('stage');
+
+    function el(name, attrs = {}, children = []) {
+      const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+      Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+      children.forEach((child) => node.appendChild(child));
+      return node;
+    }
+
+    function textNode(x, y, value, cls = 'label') {
+      const t = el('text', { x, y, class: cls });
+      t.textContent = value;
+      return t;
+    }
+
+    function activeLayers() {
+      return new Set((DATA.steps[current] && DATA.steps[current].highlight) || []);
+    }
+
+    function isActive(id) {
+      return activeLayers().has(id);
+    }
+
+    function clearStage() {
+      stage.replaceChildren();
+      const defs = el('defs');
+      defs.appendChild(el('marker', {
+        id: 'arrow-magenta', markerWidth: 8, markerHeight: 8, refX: 7, refY: 4,
+        orient: 'auto', markerUnits: 'strokeWidth'
+      }, [el('path', { d: 'M0,0 L8,4 L0,8 Z', fill: '#b5179e' })]));
+      defs.appendChild(el('marker', {
+        id: 'arrow-gold', markerWidth: 8, markerHeight: 8, refX: 7, refY: 4,
+        orient: 'auto', markerUnits: 'strokeWidth'
+      }, [el('path', { d: 'M0,0 L8,4 L0,8 Z', fill: '#d97706' })]));
+      stage.appendChild(defs);
+    }
+
+    function drawAxes() {
+      for (let i = 0; i <= 10; i++) {
+        const x = 80 + i * 56;
+        const y = 400 - i * 32;
+        stage.appendChild(el('line', { x1: x, y1: 80, x2: x, y2: 400, class: 'grid' }));
+        stage.appendChild(el('line', { x1: 80, y1: y, x2: 640, y2: y, class: 'grid' }));
+      }
+      stage.appendChild(el('line', { x1: 70, y1: 400, x2: 650, y2: 400, class: 'axis' }));
+      stage.appendChild(el('line', { x1: 80, y1: 410, x2: 80, y2: 70, class: 'axis' }));
+      stage.appendChild(textNode(646, 418, 'x'));
+      stage.appendChild(textNode(64, 76, 'y'));
+    }
+
+    function drawDoubleIntegral() {
+      clearStage();
+      drawAxes();
+      const active = activeLayers();
+      if (active.has('domain')) {
+        stage.appendChild(el('rect', { x: 150, y: 110, width: 260, height: 240, rx: 6, class: 'domain' }));
+        stage.appendChild(textNode(190, 100, 'D: 0 <= x <= 1, 0 <= y <= 2'));
+      }
+      if (active.has('slices') || active.has('height')) {
+        for (const cell of DATA.visual.samples.cells) {
+          const px = 150 + cell.x * 260;
+          const py = 350 - (cell.y / 2) * 240;
+          stage.appendChild(el('circle', { cx: px, cy: py, r: 4 + Math.min(cell.value, 3) * 2, class: 'sample-dot' }));
+        }
+      }
+      if (active.has('height')) {
+        for (let i = 0; i < 6; i++) {
+          const x = 460 + i * 22;
+          const h = 32 + i * 18;
+          stage.appendChild(el('rect', { x, y: 350 - h, width: 16, height: h, class: 'sample-cell' }));
+        }
+        stage.appendChild(textNode(458, 390, 'sampled f(x,y) heights'));
+      }
+      if (active.has('answer')) {
+        stage.appendChild(textNode(455, 130, 'Exact value = ' + DATA.lesson.answerValue.replaceAll('$', ''), 'answer-note'));
+      }
+    }
+
+    function drawPolarIntegral() {
+      clearStage();
+      const cx = 360;
+      const cy = 240;
+      if (isActive('domain') || isActive('rings') || isActive('jacobian')) {
+        for (const ring of DATA.visual.samples.rings) {
+          stage.appendChild(el('circle', { cx, cy, r: 150 * ring.r, class: 'ring' }));
+        }
+        stage.appendChild(el('line', { x1: cx, y1: cy, x2: cx + 160, y2: cy, class: 'axis' }));
+        stage.appendChild(el('line', { x1: cx, y1: cy, x2: cx, y2: cy - 160, class: 'axis' }));
+        stage.appendChild(textNode(cx + 166, cy + 4, 'x'));
+        stage.appendChild(textNode(cx + 6, cy - 166, 'y'));
+      }
+      if (isActive('jacobian')) {
+        stage.appendChild(el('path', { d: 'M360 240 L500 190 A150 150 0 0 1 510 240 Z', fill: 'rgba(181,23,158,0.16)', stroke: '#b5179e' }));
+        stage.appendChild(textNode(480, 182, 'area element grows with r'));
+      }
+      if (isActive('answer')) {
+        stage.appendChild(textNode(270, 440, 'Exact value = ' + DATA.lesson.answerValue.replaceAll('$', ''), 'answer-note'));
+      }
+    }
+
+    function project3(point) {
+      const [x, y, z] = point;
+      return [180 + x * 230 + y * 90, 350 - z * 155 - y * 70];
+    }
+
+    function drawSurfaceFlux() {
+      clearStage();
+      const points = DATA.visual.surface.map(project3);
+      if (isActive('surface')) {
+        for (const p of points) {
+          stage.appendChild(el('circle', { cx: p[0], cy: p[1], r: 4, fill: '#0077b6' }));
+        }
+        for (let i = 0; i < points.length; i += 4) {
+          const row = points.slice(i, i + 4);
+          if (row.length === 4) stage.appendChild(el('polyline', { points: row.map((p) => p.join(',')).join(' '), class: 'surface', fill: 'none' }));
+        }
+        stage.appendChild(textNode(82, 420, 'parametric surface mesh'));
+      }
+      if (isActive('field') || isActive('normal')) {
+        DATA.visual.vectors.forEach((sample, idx) => {
+          if (idx % 2 !== 0) return;
+          const p = project3(sample.point);
+          if (isActive('field')) {
+            stage.appendChild(el('line', { x1: p[0], y1: p[1], x2: p[0] + 35, y2: p[1] - 22, class: 'field' }));
+          }
+          if (isActive('normal')) {
+            stage.appendChild(el('line', { x1: p[0], y1: p[1], x2: p[0], y2: p[1] - 46, class: 'normal' }));
+          }
+        });
+      }
+      if (isActive('answer')) {
+        stage.appendChild(textNode(430, 120, 'Flux = ' + DATA.lesson.answerValue.replaceAll('$', ''), 'answer-note'));
+      }
+    }
+
+    function scalePoint(point) {
+      return [360 + point.x * 220, 240 - point.y * 90];
+    }
+
+    function drawOde() {
+      clearStage();
+      drawAxes();
+      if (isActive('slope')) {
+        DATA.visual.slopeField.forEach((s) => {
+          const p = scalePoint(s);
+          const len = 13;
+          stage.appendChild(el('line', {
+            x1: p[0] - s.dx * len,
+            y1: p[1] + s.dy * len,
+            x2: p[0] + s.dx * len,
+            y2: p[1] - s.dy * len,
+            class: 'slope'
+          }));
+        });
+      }
+      if (isActive('solution')) {
+        const d = DATA.visual.solutionCurve.map((p, i) => {
+          const [sx, sy] = scalePoint(p);
+          return `${i === 0 ? 'M' : 'L'} ${sx} ${sy}`;
+        }).join(' ');
+        stage.appendChild(el('path', { d, class: 'solution' }));
+      }
+      if (isActive('initial')) {
+        const p = scalePoint(DATA.visual.initial);
+        stage.appendChild(el('circle', { cx: p[0], cy: p[1], r: 8, class: 'initial' }));
+        stage.appendChild(textNode(p[0] + 12, p[1] - 10, 'initial condition'));
+      }
+    }
+
+    function drawVisual() {
+      const type = DATA.visual.type;
+      if (type === 'double_integral') drawDoubleIntegral();
+      else if (type === 'polar_integral') drawPolarIntegral();
+      else if (type === 'surface_flux') drawSurfaceFlux();
+      else if (type === 'ode_slope_field') drawOde();
+      else {
+        clearStage();
+        stage.appendChild(textNode(80, 120, 'Unsupported visual type: ' + type, 'answer-note'));
+      }
+    }
+
+    let typesetTicket = 0;
+    function typeset() {
+      typesetTicket += 1;
+      const ticket = typesetTicket;
+      const run = (attempt) => {
+        if (ticket !== typesetTicket) return;
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          window.MathJax.typesetPromise().catch((err) => console.warn('MathJax typeset failed', err));
+          return;
+        }
+        if (attempt < 50) {
+          window.setTimeout(() => run(attempt + 1), 120);
+        }
+      };
+      run(0);
+    }
+
+    function renderLayerChips() {
+      const wrap = document.getElementById('layers');
+      wrap.replaceChildren();
+      const label = document.createElement('span');
+      label.className = 'layers-label';
+      label.textContent = ui.layersLabel;
+      wrap.appendChild(label);
+      const active = activeLayers();
+      (DATA.visual.layers || []).forEach((layer) => {
+        const chip = document.createElement('span');
+        chip.className = 'chip' + (active.has(layer.id) ? ' active' : '');
+        chip.textContent = layer.label;
+        wrap.appendChild(chip);
+      });
+    }
+
+    function renderStep() {
+      const step = DATA.steps[current];
+      document.getElementById('step-index').textContent = ui.stepTemplate
+        .replace('{current}', String(current + 1))
+        .replace('{total}', String(DATA.steps.length));
+      document.getElementById('step-title').textContent = step.title;
+      document.getElementById('step-content').innerHTML = step.content;
+      document.getElementById('prev-btn').disabled = current === 0;
+      document.getElementById('next-btn').textContent = current === DATA.steps.length - 1 ? ui.finish : ui.next;
+      renderLayerChips();
+      drawVisual();
+      typeset();
+    }
+
+    function boot() {
+      document.documentElement.lang = DATA.lesson.language || 'zh-CN';
+      document.title = DATA.lesson.title || 'Higher Mathematics Lesson';
+      document.getElementById('lesson-meta').textContent = DATA.lesson.meta || '';
+      document.getElementById('lesson-title').innerHTML = DATA.lesson.title || '';
+      document.getElementById('answer-label').textContent = DATA.lesson.answerLabel || '';
+      document.getElementById('answer-title').textContent = DATA.lesson.title || '';
+      document.getElementById('answer-value').innerHTML = DATA.lesson.answerValue || '';
+      document.getElementById('prev-btn').textContent = ui.previous;
+      document.getElementById('next-btn').textContent = ui.next;
+      document.getElementById('visual-kind').textContent = ui.visualLabel;
+      document.getElementById('visual-title').textContent = DATA.lesson.meta || DATA.visual.type;
+      document.getElementById('prev-btn').addEventListener('click', () => {
+        if (current > 0) {
+          current -= 1;
+          renderStep();
+        }
+      });
+      document.getElementById('next-btn').addEventListener('click', () => {
+        if (current < DATA.steps.length - 1) {
+          current += 1;
+          renderStep();
+        }
+      });
+      renderStep();
+    }
+
+    boot();
+  </script>
+</body>
+</html>

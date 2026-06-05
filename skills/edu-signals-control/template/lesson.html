@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signals and Control Lesson</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #4b5563;
+      --line: #d8dee8;
+      --panel: #ffffff;
+      --page: #f4f7fb;
+      --primary: #006d77;
+      --primary-strong: #064e55;
+      --blue: #2563eb;
+      --magenta: #be185d;
+      --gold: #b45309;
+      --green: #047857;
+      --soft-cyan: #e5f6f7;
+      --soft-rose: #fde8ef;
+      --soft-gold: #fff4d6;
+      --shadow: 0 18px 46px rgba(17, 24, 39, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--page);
+    }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(330px, 438px) minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    .lesson-panel,
+    .visual-panel {
+      min-width: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .lesson-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      max-height: calc(100vh - 24px);
+    }
+
+    .lesson-header {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f9fbfd 100%);
+    }
+
+    .meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-strong);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+      margin-bottom: 10px;
+    }
+
+    .meta::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 99px;
+      background: var(--primary);
+      box-shadow: 0 0 0 4px rgba(0, 109, 119, 0.14);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.45;
+      font-weight: 760;
+    }
+
+    .answer-card {
+      margin: 14px 18px 0;
+      padding: 14px;
+      border: 1px solid #a7dce1;
+      border-radius: 12px;
+      background: var(--soft-cyan);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .answer-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .answer-card strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .answer-value {
+      min-width: 138px;
+      max-width: 220px;
+      overflow-wrap: anywhere;
+      padding: 10px 12px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+      background: var(--ink);
+    }
+
+    .step-card {
+      min-height: 0;
+      overflow: auto;
+      padding: 18px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary) #e5e7eb;
+    }
+
+    .step-index {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 99px;
+      color: #fff;
+      background: var(--primary);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .step-title {
+      margin: 0 0 12px;
+      color: var(--primary-strong);
+      font-size: 18px;
+      line-height: 1.3;
+      font-weight: 760;
+    }
+
+    .step-content {
+      color: #1f2937;
+      font-size: 15px;
+      line-height: 1.72;
+    }
+
+    .step-content p {
+      margin: 0 0 10px;
+    }
+
+    mjx-container {
+      color: inherit;
+    }
+
+    .answer-value mjx-container {
+      color: #ffffff;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 14px 18px 18px;
+      border-top: 1px solid var(--line);
+      background: #fbfcfe;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      min-height: 42px;
+      color: var(--ink);
+      background: #fff;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      color: #fff;
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+
+    .btn:disabled {
+      opacity: 0.46;
+      cursor: not-allowed;
+    }
+
+    .visual-panel {
+      min-height: calc(100vh - 24px);
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .visual-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #ffffff;
+    }
+
+    .visual-header h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .visual-kind {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .formula-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfe;
+    }
+
+    .formula {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+    }
+
+    .formula span {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .formula strong {
+      display: block;
+      min-height: 24px;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .stage-wrap {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 18px;
+      background:
+        linear-gradient(90deg, rgba(17, 24, 39, 0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(17, 24, 39, 0.035) 1px, transparent 1px),
+        #f9fbfd;
+      background-size: 28px 28px;
+    }
+
+    #stage {
+      width: min(100%, 940px);
+      height: min(68vh, 650px);
+      min-height: 400px;
+      justify-self: center;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #ffffff;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+    }
+
+    .gain-control {
+      display: grid;
+      grid-template-columns: auto minmax(160px, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #ffffff;
+    }
+
+    .gain-control label,
+    .gain-control output {
+      color: var(--primary-strong);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+
+    .layers {
+      padding: 12px 18px 16px;
+      border-top: 1px solid var(--line);
+      background: #ffffff;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .layers-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-right: 2px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 11px;
+      color: var(--muted);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .chip.active {
+      color: var(--primary-strong);
+      border-color: #8fd3da;
+      background: var(--soft-cyan);
+    }
+
+    .wire { fill: none; stroke: #334155; stroke-width: 2.4; marker-end: url(#arrow-slate); }
+    .wire.feedback { stroke: var(--magenta); marker-end: url(#arrow-magenta); }
+    .wire.active { stroke-width: 4; }
+    .block { fill: #f8fafc; stroke: #64748b; stroke-width: 2; }
+    .block.forward { fill: var(--soft-cyan); stroke: var(--primary); }
+    .block.feedback { fill: var(--soft-rose); stroke: var(--magenta); }
+    .block.active { stroke-width: 3.4; }
+    .summer { fill: #ffffff; stroke: var(--gold); stroke-width: 2.4; }
+    .summer.active { fill: var(--soft-gold); stroke-width: 3.4; }
+    .signal-dot { fill: var(--primary); }
+    .plot-axis { stroke: #94a3b8; stroke-width: 1.4; }
+    .plot-grid { stroke: #e2e8f0; stroke-width: 1; }
+    .plot-line { fill: none; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .plot-line.closed { stroke: var(--blue); }
+    .plot-line.limit { stroke: var(--green); stroke-dasharray: 7 6; }
+    .label { fill: var(--muted); font-size: 13px; font-weight: 700; }
+    .math-label { fill: var(--ink); font-size: 17px; font-weight: 850; }
+    .small-label { fill: var(--muted); font-size: 11px; font-weight: 750; }
+    .answer-note { fill: var(--ink); font-size: 18px; font-weight: 850; }
+
+    @media (max-width: 960px) {
+      body {
+        grid-template-columns: 1fr;
+        padding: 8px;
+      }
+
+      .lesson-panel,
+      .visual-panel {
+        max-height: none;
+        min-height: 0;
+        border-radius: 14px;
+      }
+
+      .visual-panel {
+        min-height: 620px;
+      }
+
+      .formula-strip {
+        grid-template-columns: 1fr;
+      }
+
+      #stage {
+        height: 520px;
+        min-height: 380px;
+      }
+
+      .answer-card {
+        grid-template-columns: 1fr;
+      }
+
+      .answer-value {
+        justify-self: start;
+      }
+    }
+  </style>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <section class="lesson-panel" aria-label="Lesson explanation">
+    <header class="lesson-header">
+      <div class="meta" id="lesson-meta"></div>
+      <h1 id="lesson-title"></h1>
+    </header>
+
+    <div class="answer-card">
+      <div>
+        <span id="answer-label"></span>
+        <strong id="answer-title"></strong>
+      </div>
+      <div class="answer-value" id="answer-value"></div>
+    </div>
+
+    <main class="step-card" id="step-card" tabindex="0">
+      <div class="step-index" id="step-index"></div>
+      <h2 class="step-title" id="step-title"></h2>
+      <div class="step-content" id="step-content"></div>
+    </main>
+
+    <nav class="controls" aria-label="Step controls">
+      <button class="btn" id="prev-btn" type="button"></button>
+      <button class="btn primary" id="next-btn" type="button"></button>
+    </nav>
+  </section>
+
+  <section class="visual-panel" aria-label="Interactive visualization">
+    <header class="visual-header">
+      <div>
+        <div class="visual-kind" id="visual-kind"></div>
+        <h2 id="visual-title"></h2>
+      </div>
+    </header>
+
+    <div class="formula-strip">
+      <div class="formula">
+        <span>前向通道</span>
+        <strong id="formula-forward"></strong>
+      </div>
+      <div class="formula">
+        <span>闭环传递函数</span>
+        <strong id="formula-closed"></strong>
+      </div>
+      <div class="formula">
+        <span>高增益极限</span>
+        <strong id="formula-limit"></strong>
+      </div>
+    </div>
+
+    <div class="stage-wrap">
+      <svg id="stage" viewBox="0 0 920 560" role="img" aria-label="Feedback control visualization"></svg>
+      <div class="gain-control">
+        <label for="gain-slider" id="gain-label"></label>
+        <input id="gain-slider" type="range">
+        <output id="gain-output"></output>
+      </div>
+    </div>
+
+    <div class="layers" id="layers"></div>
+  </section>
+
+  <script id="lesson-data" type="application/json">__LESSON_DATA__</script>
+  <script>
+    const DATA = JSON.parse(document.getElementById('lesson-data').textContent);
+    const ui = Object.assign({
+      previous: 'Previous',
+      next: 'Next',
+      finish: 'Finish',
+      stepTemplate: 'Step {current} / {total}',
+      visualLabel: 'Interactive visual',
+      layersLabel: 'Layers',
+      gainLabel: 'Loop gain k'
+    }, DATA.lesson.ui || {});
+
+    let current = 0;
+    const stage = document.getElementById('stage');
+    const slider = document.getElementById('gain-slider');
+    const sliderConfig = Object.assign({ min: 1, max: 80, value: 20 }, DATA.visual.gainSlider || {});
+
+    function el(name, attrs = {}, children = []) {
+      const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+      Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+      children.forEach((child) => node.appendChild(child));
+      return node;
+    }
+
+    function textNode(x, y, value, cls = 'label') {
+      const t = el('text', { x, y, class: cls });
+      t.textContent = value;
+      return t;
+    }
+
+    function activeLayers() {
+      return new Set((DATA.steps[current] && DATA.steps[current].highlight) || []);
+    }
+
+    function isActive(id) {
+      return activeLayers().has(id);
+    }
+
+    function clearStage() {
+      stage.replaceChildren();
+      const defs = el('defs');
+      defs.appendChild(el('marker', {
+        id: 'arrow-slate', markerWidth: 8, markerHeight: 8, refX: 7, refY: 4,
+        orient: 'auto', markerUnits: 'strokeWidth'
+      }, [el('path', { d: 'M0,0 L8,4 L0,8 Z', fill: '#334155' })]));
+      defs.appendChild(el('marker', {
+        id: 'arrow-magenta', markerWidth: 8, markerHeight: 8, refX: 7, refY: 4,
+        orient: 'auto', markerUnits: 'strokeWidth'
+      }, [el('path', { d: 'M0,0 L8,4 L0,8 Z', fill: '#be185d' })]));
+      stage.appendChild(defs);
+    }
+
+    function classWithActive(base, id) {
+      return base + (isActive(id) ? ' active' : '');
+    }
+
+    function drawBlockDiagram() {
+      const y = 150;
+      const summerX = 145;
+      const blockX = 250;
+      const outX = 650;
+      const feedbackY = 320;
+
+      stage.appendChild(el('line', { x1: 48, y1: y, x2: summerX - 28, y2: y, class: classWithActive('wire', 'summer') }));
+      stage.appendChild(textNode(42, y - 18, 'x', 'math-label'));
+      stage.appendChild(el('circle', { cx: summerX, cy: y, r: 25, class: classWithActive('summer', 'summer') }));
+      stage.appendChild(textNode(summerX - 12, y - 8, '+', 'math-label'));
+      stage.appendChild(textNode(summerX - 10, y + 20, '-', 'math-label'));
+
+      stage.appendChild(el('line', { x1: summerX + 25, y1: y, x2: blockX - 10, y2: y, class: classWithActive('wire', 'signal') }));
+      stage.appendChild(textNode(180, y - 18, 'u_i', 'math-label'));
+      stage.appendChild(el('rect', { x: blockX, y: y - 44, width: 150, height: 88, rx: 8, class: classWithActive('block forward', 'forward') }));
+      stage.appendChild(textNode(blockX + 53, y + 6, 'kA', 'math-label'));
+      stage.appendChild(el('line', { x1: blockX + 150, y1: y, x2: outX, y2: y, class: classWithActive('wire', 'forward') }));
+      stage.appendChild(el('circle', { cx: outX, cy: y, r: 5, class: 'signal-dot' }));
+      stage.appendChild(textNode(outX + 18, y - 18, 'y', 'math-label'));
+
+      stage.appendChild(el('path', {
+        d: `M ${outX} ${y} L ${outX} ${feedbackY} L ${blockX + 125} ${feedbackY}`,
+        class: classWithActive('wire feedback', 'feedback')
+      }));
+      stage.appendChild(el('rect', { x: blockX - 35, y: feedbackY - 36, width: 170, height: 72, rx: 8, class: classWithActive('block feedback', 'feedback') }));
+      stage.appendChild(textNode(blockX + 23, feedbackY + 6, 'F(s)', 'math-label'));
+      stage.appendChild(el('path', {
+        d: `M ${blockX - 35} ${feedbackY} L ${summerX} ${feedbackY} L ${summerX} ${y + 25}`,
+        class: classWithActive('wire feedback', 'feedback')
+      }));
+
+      if (isActive('equation')) {
+        stage.appendChild(el('rect', { x: 675, y: 70, width: 200, height: 128, rx: 10, fill: '#f8fafc', stroke: '#d8dee8' }));
+        stage.appendChild(textNode(696, 105, 'u_i = x - F(s)y', 'math-label'));
+        stage.appendChild(textNode(696, 138, 'y = kA u_i', 'math-label'));
+        stage.appendChild(textNode(696, 171, 'H(s) = y / x', 'math-label'));
+      }
+
+      if (isActive('limit') || isActive('answer')) {
+        const kValue = Number(slider.value || sliderConfig.value);
+        const closeness = Math.max(0, Math.min(1, 1 - 1 / Math.max(1, kValue)));
+        stage.appendChild(el('rect', { x: 60, y: 238, width: 270, height: 58, rx: 10, fill: '#fff4d6', stroke: '#e8b94f' }));
+        stage.appendChild(textNode(78, 272, 'k 增大时，1/(kA) 项变小', 'small-label'));
+        stage.appendChild(el('rect', { x: 78, y: 280, width: 210, height: 8, rx: 4, fill: '#fde68a' }));
+        stage.appendChild(el('rect', { x: 78, y: 280, width: 210 * closeness, height: 8, rx: 4, fill: '#047857' }));
+      }
+    }
+
+    function plotY(value, min, max, top, height) {
+      return top + height - ((value - min) / Math.max(1, max - min)) * height;
+    }
+
+    function formatOmega(value) {
+      const rounded = Math.round(Number(value) * 1000) / 1000;
+      return String(rounded).replace(/\\.0+$/, '');
+    }
+
+    function drawBodePlot() {
+      const samples = (DATA.visual.samples && DATA.visual.samples.bode) || [];
+      const left = 92;
+      const top = 365;
+      const width = 700;
+      const height = 130;
+
+      stage.appendChild(textNode(left, top - 20, '幅值采样：闭环响应 vs 高增益极限', 'small-label'));
+      for (let i = 0; i <= 4; i++) {
+        const x = left + (width * i) / 4;
+        const y = top + (height * i) / 4;
+        stage.appendChild(el('line', { x1: x, y1: top, x2: x, y2: top + height, class: 'plot-grid' }));
+        stage.appendChild(el('line', { x1: left, y1: y, x2: left + width, y2: y, class: 'plot-grid' }));
+      }
+      stage.appendChild(el('line', { x1: left, y1: top + height, x2: left + width, y2: top + height, class: 'plot-axis' }));
+      stage.appendChild(el('line', { x1: left, y1: top, x2: left, y2: top + height, class: 'plot-axis' }));
+
+      if (!samples.length) {
+        stage.appendChild(textNode(left + 180, top + 68, '具体 F(s) 样例会显示频率采样', 'label'));
+        return;
+      }
+
+      const magnitudes = samples.flatMap((item) => [item.closedLoopMagnitudeDb, item.highGainMagnitudeDb]);
+      const min = Math.floor(Math.min(...magnitudes) / 10) * 10 - 6;
+      const max = Math.ceil(Math.max(...magnitudes) / 10) * 10 + 6;
+      const closedPoints = samples.map((item, index) => {
+        const x = left + (width * index) / Math.max(1, samples.length - 1);
+        const y = plotY(item.closedLoopMagnitudeDb, min, max, top, height);
+        return `${x},${y}`;
+      });
+      const limitPoints = samples.map((item, index) => {
+        const x = left + (width * index) / Math.max(1, samples.length - 1);
+        const y = plotY(item.highGainMagnitudeDb, min, max, top, height);
+        return `${x},${y}`;
+      });
+      stage.appendChild(el('polyline', { points: closedPoints.join(' '), class: 'plot-line closed' }));
+      stage.appendChild(el('polyline', { points: limitPoints.join(' '), class: 'plot-line limit' }));
+      stage.appendChild(textNode(left + width - 155, top + 18, '闭环响应', 'small-label'));
+      stage.appendChild(textNode(left + width - 155, top + 38, '高增益极限', 'small-label'));
+      stage.appendChild(textNode(left - 44, top + 10, `${Math.round(max)} dB`, 'small-label'));
+      stage.appendChild(textNode(left - 44, top + height, `${Math.round(min)} dB`, 'small-label'));
+      samples.forEach((item, index) => {
+        const x = left + (width * index) / Math.max(1, samples.length - 1);
+        stage.appendChild(textNode(x - 10, top + height + 20, formatOmega(item.omega), 'small-label'));
+      });
+    }
+
+    function drawVisual() {
+      clearStage();
+      drawBlockDiagram();
+      drawBodePlot();
+      if (isActive('answer')) {
+        stage.appendChild(textNode(672, 282, '极限：' + DATA.visual.limit, 'answer-note'));
+      }
+    }
+
+    let typesetTicket = 0;
+    function typeset() {
+      typesetTicket += 1;
+      const ticket = typesetTicket;
+      const run = (attempt) => {
+        if (ticket !== typesetTicket) return;
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          window.MathJax.typesetPromise().catch((err) => console.warn('MathJax typeset failed', err));
+          return;
+        }
+        if (attempt < 50) {
+          window.setTimeout(() => run(attempt + 1), 120);
+        }
+      };
+      run(0);
+    }
+
+    function renderLayerChips() {
+      const wrap = document.getElementById('layers');
+      wrap.replaceChildren();
+      const label = document.createElement('span');
+      label.className = 'layers-label';
+      label.textContent = ui.layersLabel;
+      wrap.appendChild(label);
+      const active = activeLayers();
+      (DATA.visual.layers || []).forEach((layer) => {
+        const chip = document.createElement('span');
+        chip.className = 'chip' + (active.has(layer.id) ? ' active' : '');
+        chip.textContent = layer.label;
+        wrap.appendChild(chip);
+      });
+    }
+
+    function renderStep() {
+      const step = DATA.steps[current];
+      document.getElementById('step-index').textContent = ui.stepTemplate
+        .replace('{current}', String(current + 1))
+        .replace('{total}', String(DATA.steps.length));
+      document.getElementById('step-title').textContent = step.title;
+      document.getElementById('step-content').innerHTML = step.content;
+      document.getElementById('prev-btn').disabled = current === 0;
+      document.getElementById('next-btn').textContent = current === DATA.steps.length - 1 ? ui.finish : ui.next;
+      renderLayerChips();
+      drawVisual();
+      typeset();
+    }
+
+    function boot() {
+      document.documentElement.lang = DATA.lesson.language || 'zh-CN';
+      document.title = DATA.lesson.title || 'Signals and Control Lesson';
+      document.getElementById('lesson-meta').textContent = DATA.lesson.meta || '';
+      document.getElementById('lesson-title').innerHTML = DATA.lesson.title || '';
+      document.getElementById('answer-label').textContent = DATA.lesson.answerLabel || '';
+      document.getElementById('answer-title').textContent = DATA.lesson.title || '';
+      document.getElementById('answer-value').innerHTML = DATA.lesson.answerValue || '';
+      document.getElementById('prev-btn').textContent = ui.previous;
+      document.getElementById('next-btn').textContent = ui.next;
+      document.getElementById('visual-kind').textContent = ui.visualLabel;
+      document.getElementById('visual-title').textContent = DATA.lesson.meta || DATA.visual.type;
+      document.getElementById('formula-forward').innerHTML = '$G(s)=' + DATA.visual.forwardGain + '$';
+      document.getElementById('formula-closed').innerHTML = '$H(s)=' + DATA.visual.closedLoop + '$';
+      document.getElementById('formula-limit').innerHTML = '$H(s)\\to ' + DATA.visual.limit + '$';
+
+      slider.min = sliderConfig.min;
+      slider.max = sliderConfig.max;
+      slider.value = sliderConfig.value;
+      document.getElementById('gain-label').textContent = ui.gainLabel;
+      const output = document.getElementById('gain-output');
+      const syncGain = () => {
+        output.textContent = 'k = ' + slider.value;
+        drawVisual();
+      };
+      slider.addEventListener('input', syncGain);
+      syncGain();
+
+      document.getElementById('prev-btn').addEventListener('click', () => {
+        if (current > 0) {
+          current -= 1;
+          renderStep();
+        }
+      });
+      document.getElementById('next-btn').addEventListener('click', () => {
+        if (current < DATA.steps.length - 1) {
+          current += 1;
+          renderStep();
+        }
+      });
+      renderStep();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
