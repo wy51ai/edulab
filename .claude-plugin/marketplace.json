@@ -10,7 +10,7 @@
         "source": "github",
         "repo": "wy51ai/edulab"
       },
-      "description": "教育类技能集合：把学科问题转成可交互教学网页。首个技能 edu-solid-geometry 立体几何解题（建系+向量法），输出自带 3D 演示与分步解析的单页 HTML。"
+      "description": "教育类技能集合：把学科问题转成可交互教学网页。edu-solid-geometry 立体几何解题（建系+向量法，3D + MathJax）；edu-analytic-geometry 解析几何/圆锥曲线解题（sympy 精确计算 + 实时交互 2D 画板 + KaTeX）。"
     }
   ]
 }

@@ -4,22 +4,6 @@
 
 A collection of education skills that turn academic problems into **interactive lesson web pages**.
 
-edulab is a [Claude Code](https://claude.com/claude-code) plugin (plugin + marketplace). The goal: give it a problem, get back a single self-contained HTML page you can open in any browser — complete with a worked explanation and a visualization, turning "I read it" into "I can rotate it and actually see it."
-
-The first skill, **edu-solid-geometry**, solves solid geometry problems using the "coordinate system + vector method," driven by exact [sympy](https://www.sympy.org) computation. It outputs a lesson page with step-by-step analysis (MathJax) on the left and an interactive 3D model (Three.js) on the right.
-
-## Preview
-
-![edulab demo — line-plane angle lesson page](demo1.png)
-
-[index.html](index.html) in the project root is a finished sample (regular quadrilateral pyramid · line-plane angle). Open it directly in a browser:
-
-- **Left**: problem statement / answer / step-by-step analysis, formulas rendered with MathJax
-- **Right**: the matching 3D model — rotate and zoom, with key elements highlighted per step and the camera moving along
-- The answer, the 3D coordinates, and every intermediate value are **consistent at the source** (all derived from one sympy computation)
-
-More samples live in [skills/edu-solid-geometry/output/](skills/edu-solid-geometry/output/) (cube / box, etc.).
-
 ## Install
 
 **Recommended** — install with [skills](https://github.com/vercel-labs/skills) in one command:
@@ -41,9 +25,11 @@ Or use it as a Claude Code plugin marketplace:
 /plugin install edulab
 ```
 
-Once installed, the skill activates on its trigger words, and other agents can also invoke it to generate these pages.
+Once installed, the skills activate on their trigger words, and can also be invoked manually.
 
 ## Skill: edu-solid-geometry
+
+![edu-solid-geometry demo](edu-solid-geometry.gif)
 
 Solves one solid geometry problem into a self-contained interactive lesson page. Three entry points:
 
@@ -77,6 +63,35 @@ python3 lib/geometry_kernel.py                     # kernel built-in self-check
 
 > If you don't pass an output path, it writes to the **current working directory (cwd)**.
 
+## Skill: edu-analytic-geometry
+
+![edu-analytic-geometry demo](edu-analytic-geometry.gif)
+
+Solves one analytic geometry (conic sections) problem into a self-contained interactive lesson page. Same three entry points as above (text / image / random). Built on a **2D Canvas board + KaTeX** with a generic, data-driven interactive engine: a parameter slider drives derived constructions (line∩conic, point-on-conic, central reflection, tangent…) and live readouts, with a theoretical-range bar or a fixed-value indicator.
+
+**Problem types covered**: standard equation, chord length, dot-product range / fixed value, triangle-area extremum, fixed point, fixed value (slope product), locus, tangent, eccentricity — on ellipses / hyperbolas / parabolas / circles. All solved uniformly via "parametrized line `x = my + c` + system + Vieta's formulas + substitution."
+
+> A correctness note baked into the kernel: open/closed interval endpoints are decided by whether a *real* line attains them, so the boxed answer always matches what the interactive tool shows (e.g. the ellipse `MA·MB` range is the **closed** `[-3, 7/4]` — slide θ to 0° and you read exactly −3).
+
+**Trigger words**: analytic geometry, conic sections, ellipse, hyperbola, parabola, chord length, dot product range, fixed point, fixed value, locus, eccentricity, interactive analytic geometry solution page; 解析几何、圆锥曲线、椭圆、双曲线、抛物线、焦点弦、向量数量积取值范围、定点问题、定值问题、斜率之积、三角形面积最值、轨迹方程、离心率, etc.
+
+### Dependency
+
+The compute core `lib/analytic_kernel.py` depends on **sympy** (same as above).
+
+### Generate from the command line (without Claude)
+
+```bash
+cd skills/edu-analytic-geometry
+python3 scripts/generate.py list                          # list registered problem types
+python3 scripts/generate.py ellipse_dot_range ./sol.html  # ellipse · MA·MB range [-3, 7/4]
+python3 scripts/generate.py parabola_dot_const ./sol.html # parabola focal chord · OA·OB ≡ -3
+python3 scripts/generate.py all ./out_dir                 # all registered types
+python3 lib/analytic_kernel.py                            # kernel built-in self-check
+```
+
+> Like above, no output path → writes to the **current working directory (cwd)**.
+
 ## How it works
 
 1. **Get a problem spec** — normalize all three entry points into a structured description (body type and dimensions, given conditions, the quantity asked, language).
@@ -94,23 +109,35 @@ edulab/
 │   └── marketplace.json         # marketplace manifest
 ├── index.html                   # finished sample (quad pyramid · line-plane angle)
 └── skills/
-    └── edu-solid-geometry/
-        ├── SKILL.md             # skill description and workflow
-        ├── template/lesson.html # data-driven template (generic 3D renderer + data island)
+    ├── edu-solid-geometry/      # solid geometry — 3D (Three.js) + MathJax
+    │   ├── SKILL.md
+    │   ├── template/lesson.html # data-driven template (generic 3D renderer + data island)
+    │   ├── lib/
+    │   │   ├── geometry_kernel.py  # sympy exact-computation core
+    │   │   └── bodies.py           # edge-topology library for solids
+    │   ├── scripts/generate.py
+    │   ├── output/
+    │   └── references/          # problem-schema.md · conventions.md
+    └── edu-analytic-geometry/   # analytic geometry / conics — 2D (Canvas) + KaTeX
+        ├── SKILL.md
+        ├── template/board.html  # data-driven template (generic 2D renderer + param engine)
         ├── lib/
-        │   ├── geometry_kernel.py  # sympy exact-computation core
-        │   └── bodies.py           # edge-topology library for solids
-        ├── scripts/generate.py  # template injection + example builders
-        ├── output/              # internal development samples
-        └── references/
-            ├── problem-schema.md   # data format
-            └── conventions.md      # coordinate conventions, solution recipes, self-check
+        │   ├── analytic_kernel.py  # sympy exact-solver core (system · Vieta · range · fixed value)
+        │   └── conics.py           # conic-section definition library
+        ├── scripts/generate.py
+        ├── output/
+        └── references/          # problem-schema.md · conventions.md
 ```
 
 ## Extending
 
+**edu-solid-geometry**
 - **Add a problem type**: add a solver function in `geometry_kernel.py` (see the recipe table in `references/conventions.md`), then add a `build_*` in `generate.py`.
 - **Add a solid**: add a coordinate-construction function in `geometry_kernel.py`, then add its edge topology in `bodies.py`.
+
+**edu-analytic-geometry**
+- **Add a problem type**: add a target-quantity function in `analytic_kernel.py` and reuse `range_over_m` / `is_constant_in_m`, then add a `build_*` in `generate.py` (pick an interaction: range bar / fixed value / fixed point / locus trace).
+- **Add a curve**: ellipse / hyperbola / parabola / circle are built in; new curves go in `conics.py` and the `board.html` engine.
 
 ## License
 
@@ -120,4 +147,12 @@ edulab/
 
 WY · [@akokoi1](https://x.com/akokoi1)
 
-Stars, issues, and PRs are welcome.
+## Star History
+
+<a href="https://www.star-history.com/?repos=wy51ai%2Fedulab&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&legend=top-left" />
+ </picture>
+</a>

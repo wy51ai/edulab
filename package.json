@@ -1,7 +1,7 @@
 {
   "name": "@wy51ai/edulab",
-  "version": "0.1.4",
-  "description": "A Claude Code plugin: a collection of education skills that turn academic problems into interactive lesson web pages. First skill edu-solid-geometry solves solid geometry (coordinate system + vector method) and outputs a single-page HTML with a 3D demo and step-by-step analysis.",
+  "version": "0.1.6",
+  "description": "A Claude Code plugin: a collection of education skills that turn academic problems into interactive lesson web pages. Skills: edu-solid-geometry (solid geometry, coordinate+vector method, 3D Three.js + MathJax) and edu-analytic-geometry (conic sections, exact sympy-driven solutions with a live interactive 2D Canvas board + KaTeX).",
   "keywords": [
     "claude-code",
     "claude-code-plugin",
@@ -9,10 +9,13 @@
     "agent-skills",
     "education",
     "solid-geometry",
+    "analytic-geometry",
+    "conic-sections",
     "math",
     "geometry",
     "threejs",
     "mathjax",
+    "katex",
     "sympy"
   ],
   "homepage": "https://github.com/wy51ai/edulab#readme",
@@ -30,6 +33,7 @@
     "!skills/**/__pycache__/**",
     "!skills/**/*.pyc",
     "!skills/edu-solid-geometry/output/**",
+    "!skills/edu-analytic-geometry/output/**",
     ".claude-plugin",
     "index.html",
     "README.md",

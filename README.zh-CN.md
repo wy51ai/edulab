@@ -4,22 +4,6 @@
 
 教育类技能集合：把学科问题转成**可交互的教学网页**。
 
-edulab 是一个 [Claude Code](https://claude.com/claude-code) 插件（plugin + marketplace）。它的目标是：给一道题，产出一个能直接用浏览器打开、自带讲解和可视化的单页 HTML，让"看懂"变成"能动手转一转看明白"。
-
-首个技能 **edu-solid-geometry** 负责立体几何解题：用"建系 + 向量法"求解，由 [sympy](https://www.sympy.org) 精确计算驱动，输出左侧分步解析（MathJax）+ 右侧可交互 3D 模型（Three.js）的教学网页。
-
-## 效果预览
-
-![edulab 效果预览 —— 线面角教学网页](demo1.png)
-
-根目录的 [index.html](index.html) 是一个成品样例（正四棱锥·线面角），直接用浏览器打开即可查看：
-
-- **左侧**：题面 / 答案 / 分步解析，公式用 MathJax 渲染
-- **右侧**：题目对应的 3D 模型，可旋转缩放，分步高亮关键元素并切换镜头
-- 答案、3D 坐标、每步中间数值**同源一致**（都来自同一份 sympy 计算）
-
-更多样例见 [skills/edu-solid-geometry/output/](skills/edu-solid-geometry/output/)（cube / box 等）。
-
 ## 安装
 
 **推荐** —— 用 [skills](https://github.com/vercel-labs/skills) 一行命令安装：
@@ -41,9 +25,11 @@ npx skills update
 /plugin install edulab
 ```
 
-安装后，技能会随触发词自动激活，也可被其他 agent 调用来生成这类网页。
+安装后，技能会随触发词自动激活，也可以手动调用。
 
 ## 技能：edu-solid-geometry
+
+![edu-solid-geometry 演示](edu-solid-geometry.gif)
 
 把一道立体几何题解成一个自包含的交互教学网页。支持三种入口：
 
@@ -77,6 +63,35 @@ python3 lib/geometry_kernel.py                     # kernel 内置样例自检
 
 > 不传输出路径时，默认写到**当前工作目录（cwd）**。
 
+## 技能：edu-analytic-geometry
+
+![edu-analytic-geometry 演示](edu-analytic-geometry.gif)
+
+把一道解析几何（圆锥曲线）题解成一个自包含的交互教学网页。三入口与上面一致（文字 / 图片 / 随机）。基于 **2D Canvas 画板 + KaTeX** 的通用数据驱动交互引擎：一个参数滑块驱动派生构造（直线∩曲线、曲线上动点、中心对称、切线…）与实时读数，并配理论范围条或定值指示。
+
+**覆盖题型**：求标准方程、弦长、向量数量积取值范围 / 定值、三角形面积最值、定点、定值（斜率之积）、轨迹、切线、离心率——涵盖椭圆 / 双曲线 / 抛物线 / 圆。统一用"设含参直线 `x=my+c` + 联立 + 韦达 + 换元"。
+
+> kernel 内置的一个正确性细节：区间端点的开 / 闭由"是否有真实直线取到"判定，所以框出的答案始终与交互工具一致（例如椭圆 `MA·MB` 的范围是**闭区间** `[-3, 7/4]`——把 θ 拖到 0° 屏幕上正好读到 −3）。
+
+**触发词**：解析几何、圆锥曲线、椭圆、双曲线、抛物线、焦点弦、向量数量积取值范围、定点问题、定值问题、斜率之积、三角形面积最值、轨迹方程、离心率；analytic geometry, conic sections, ellipse, hyperbola, parabola, chord length, dot product range, fixed point, locus, interactive analytic geometry solution page 等。
+
+### 依赖
+
+计算核心 `lib/analytic_kernel.py` 依赖 **sympy**（同上）。
+
+### 命令行直接生成（不经过 Claude）
+
+```bash
+cd skills/edu-analytic-geometry
+python3 scripts/generate.py list                          # 列出已注册题型
+python3 scripts/generate.py ellipse_dot_range ./sol.html  # 椭圆 · MA·MB 范围 [-3, 7/4]
+python3 scripts/generate.py parabola_dot_const ./sol.html # 抛物线焦点弦 · OA·OB ≡ -3
+python3 scripts/generate.py all ./out_dir                 # 全部已注册题型
+python3 lib/analytic_kernel.py                            # kernel 内置自检
+```
+
+> 同上，不传输出路径时默认写到**当前工作目录（cwd）**。
+
 ## 工作原理
 
 1. **得到 problem spec** —— 三入口归一成结构化描述（几何体类型与尺寸、已知条件、所求、语言）。
@@ -94,23 +109,35 @@ edulab/
 │   └── marketplace.json         # 市场清单
 ├── index.html                   # 成品样例（正四棱锥·线面角）
 └── skills/
-    └── edu-solid-geometry/
-        ├── SKILL.md             # 技能说明与工作流程
-        ├── template/lesson.html # 数据驱动模板（通用 3D 渲染器 + 数据岛）
+    ├── edu-solid-geometry/      # 立体几何 — 3D（Three.js）+ MathJax
+    │   ├── SKILL.md
+    │   ├── template/lesson.html # 数据驱动模板（通用 3D 渲染器 + 数据岛）
+    │   ├── lib/
+    │   │   ├── geometry_kernel.py  # sympy 精确计算核心
+    │   │   └── bodies.py           # 几何体棱拓扑库
+    │   ├── scripts/generate.py
+    │   ├── output/
+    │   └── references/          # problem-schema.md · conventions.md
+    └── edu-analytic-geometry/   # 解析几何 / 圆锥曲线 — 2D（Canvas）+ KaTeX
+        ├── SKILL.md
+        ├── template/board.html  # 数据驱动模板（通用 2D 渲染器 + 参数引擎）
         ├── lib/
-        │   ├── geometry_kernel.py  # sympy 精确计算核心
-        │   └── bodies.py           # 几何体棱拓扑库
-        ├── scripts/generate.py  # 注入模板 + 范例构建函数
-        ├── output/              # 技能内部开发样例
-        └── references/
-            ├── problem-schema.md   # 数据格式
-            └── conventions.md      # 建系约定、解法配方、自检
+        │   ├── analytic_kernel.py  # sympy 精确求解核心（联立·韦达·范围·定值）
+        │   └── conics.py           # 圆锥曲线定义库
+        ├── scripts/generate.py
+        ├── output/
+        └── references/          # problem-schema.md · conventions.md
 ```
 
 ## 扩展
 
+**edu-solid-geometry**
 - **加题型**：在 `geometry_kernel.py` 加求解函数（见 `references/conventions.md` 配方表），在 `generate.py` 加一个 `build_*`。
 - **加几何体**：在 `geometry_kernel.py` 加坐标构建函数，在 `bodies.py` 加棱拓扑。
+
+**edu-analytic-geometry**
+- **加题型**：在 `analytic_kernel.py` 加目标量函数并复用 `range_over_m` / `is_constant_in_m`，在 `generate.py` 加一个 `build_*`（选交互范式：范围条 / 定值 / 定点 / 轨迹 trace）。
+- **加曲线**：椭圆 / 双曲线 / 抛物线 / 圆已内置；新曲线在 `conics.py` 与 `board.html` 引擎各加一份。
 
 ## License
 
@@ -120,4 +147,12 @@ edulab/
 
 WY · [@akokoi1](https://x.com/akokoi1)
 
-欢迎 star、issue、PR。
+## Star History
+
+<a href="https://www.star-history.com/?repos=wy51ai%2Fedulab&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&legend=top-left" />
+ </picture>
+</a>
