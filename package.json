@@ -1,7 +1,7 @@
 {
   "name": "@wy51ai/edulab",
   "version": "0.1.6",
-  "description": "A Claude Code plugin: a collection of education skills that turn academic problems into interactive lesson web pages. Skills: edu-solid-geometry (solid geometry, coordinate+vector method, 3D Three.js + MathJax) and edu-analytic-geometry (conic sections, exact sympy-driven solutions with a live interactive 2D Canvas board + KaTeX).",
+  "description": "A Claude Code plugin: a collection of education skills that turn academic problems into interactive lesson web pages. Skills: edu-solid-geometry (solid geometry, coordinate+vector method, 3D Three.js + MathJax), edu-analytic-geometry (conic sections, exact sympy-driven solutions with a live interactive 2D Canvas board + KaTeX), and edu-chem-reaction (microscopic 3D chemistry reaction demos — sympy-balanced, atom-conservation morph + mechanism engines, Three.js + KaTeX).",
   "keywords": [
     "claude-code",
     "claude-code-plugin",
@@ -13,6 +13,11 @@
     "conic-sections",
     "math",
     "geometry",
+    "chemistry",
+    "chemical-reaction",
+    "combustion",
+    "redox",
+    "reaction-mechanism",
     "threejs",
     "mathjax",
     "katex",
@@ -34,6 +39,7 @@
     "!skills/**/*.pyc",
     "!skills/edu-solid-geometry/output/**",
     "!skills/edu-analytic-geometry/output/**",
+    "!skills/edu-chem-reaction/output/**",
     ".claude-plugin",
     "index.html",
     "README.md",

@@ -10,7 +10,7 @@
         "source": "github",
         "repo": "wy51ai/edulab"
       },
-      "description": "教育类技能集合：把学科问题转成可交互教学网页。edu-solid-geometry 立体几何解题（建系+向量法，3D + MathJax）；edu-analytic-geometry 解析几何/圆锥曲线解题（sympy 精确计算 + 实时交互 2D 画板 + KaTeX）。"
+      "description": "教育类技能集合：把学科问题转成可交互教学网页。edu-solid-geometry 立体几何解题（建系+向量法，3D + MathJax）；edu-analytic-geometry 解析几何/圆锥曲线解题（sympy 精确计算 + 实时交互 2D 画板 + KaTeX）；edu-chem-reaction 化学反应微观 3D 演示（sympy 自动配平 + 原子守恒，morph/mechanism 双引擎，Three.js + KaTeX）。"
     }
   ]
 }

@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>化学反应微观 3D 演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+    <style>
+        :root { --accent: #6366f1; --accent-soft: rgba(99,102,241,0.25); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .acc-text { color: var(--accent); }
+        .acc-bg { background: var(--accent); }
+        .acc-grad { background: linear-gradient(90deg, var(--accent-soft), var(--accent)); }
+        input[type=range].acc-range { accent-color: var(--accent); }
+        .acc-ring:focus { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+        .play-btn { background: var(--accent); }
+        .play-btn:hover { filter: brightness(1.12); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-hidden font-sans">
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+        <!-- 3D Viewport -->
+        <div class="flex-1 relative bg-slate-950 flex flex-col min-h-[45vh]">
+            <div id="labels-overlay" class="absolute inset-0 pointer-events-none z-20 overflow-hidden"></div>
+            <div id="canvas-container" class="flex-1 w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+            <!-- Energy diagram (optional) -->
+            <div id="energy-panel" class="absolute top-4 right-4 hidden bg-slate-900/80 border border-slate-800 backdrop-blur rounded-xl p-3 select-none">
+                <div class="text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-1" id="energy-title">能量·反应进程</div>
+                <canvas id="energy-canvas" width="200" height="110"></canvas>
+            </div>
+
+            <div class="absolute bottom-4 left-4 bg-slate-900/80 border border-slate-800 backdrop-blur text-xs px-3 py-2 rounded-lg text-slate-400 select-none">
+                <div class="flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                    <span id="drag-hint">拖拽旋转 · 滚轮缩放 · 右键平移</span>
+                </div>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-slate-900/60">
+                <div id="viewport-progress" class="h-full acc-grad" style="width:0%"></div>
+            </div>
+        </div>
+
+        <!-- Right panel -->
+        <div class="w-full lg:w-[480px] shrink-0 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-y-auto">
+
+            <div class="p-6 border-b border-slate-800 bg-slate-950/40">
+                <h1 id="title" class="text-lg font-bold tracking-wide text-slate-100">化学反应 3D 虚拟实验室</h1>
+                <p id="subtitle" class="text-xs acc-text mt-1"></p>
+                <div id="equation-container" class="bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 mt-4 text-sm overflow-x-auto"></div>
+            </div>
+
+            <!-- Stepper -->
+            <div class="p-6 border-b border-slate-800 bg-slate-950/40">
+                <div class="relative">
+                    <div class="absolute top-4 left-5 right-5 h-0.5 bg-slate-800">
+                        <div id="step-progress-line" class="h-full acc-bg transition-all duration-300" style="width:0%"></div>
+                    </div>
+                    <div id="stepper" class="relative flex justify-between"></div>
+                </div>
+
+                <div class="mt-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span id="progress-label" class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">反应进度</span>
+                        <span id="progress-readout" class="text-xs font-mono font-bold acc-text tabular-nums">0%</span>
+                    </div>
+                    <input type="range" id="reaction-slider" min="0" max="100" value="0" class="acc-range acc-ring w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    <p id="slider-hint" class="text-[11px] text-slate-500 mt-2 leading-relaxed"></p>
+                </div>
+
+                <div class="flex items-center gap-2 mt-4">
+                    <button id="prev-btn" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors cursor-pointer" title="上一步">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button id="play-btn" class="play-btn flex-1 px-4 py-2.5 text-white rounded-lg flex items-center justify-center space-x-1.5 transition-colors shadow-lg cursor-pointer">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <span id="play-text">自动演示</span>
+                    </button>
+                    <button id="next-btn" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors cursor-pointer" title="下一步">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                    <button id="reset-btn" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors cursor-pointer" title="复位">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1 space-y-4">
+                <div class="bg-slate-950/30 border border-slate-800/80 rounded-xl p-4">
+                    <h2 class="text-base font-bold text-slate-100 mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 acc-text shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span id="step-title-text">—</span>
+                    </h2>
+                    <p id="explanation-text" class="text-sm text-slate-300 leading-relaxed min-h-[140px]">加载中...</p>
+                </div>
+
+                <!-- Conservation counter -->
+                <div id="conservation-panel" class="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-slate-400 tracking-wider uppercase" id="conservation-label">原子守恒</span>
+                        <span class="text-[10px] text-emerald-400" id="conservation-note">反应前后不变</span>
+                    </div>
+                    <div id="conservation-chips" class="flex flex-wrap gap-2 mt-3"></div>
+                </div>
+
+                <!-- Overlay toggles (flame / catalyst) -->
+                <div id="toggle-flame" class="hidden p-4 rounded-xl bg-amber-950/30 border border-amber-900/50 items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg bg-amber-900/60 flex items-center justify-center text-amber-400 shrink-0">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177 7.547 7.547 0 01-1.705-1.715.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248z"/></svg>
+                        </div>
+                        <div><h4 class="text-sm font-bold text-slate-200" id="flame-title">燃烧火焰与高温</h4>
+                             <p class="text-xs text-amber-300" id="flame-sub">显示反应放出的热与光</p></div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" id="flame-toggle" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                    </label>
+                </div>
+
+                <div id="toggle-catalyst" class="hidden p-4 rounded-xl bg-slate-800/40 border border-slate-700/50 items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background: var(--accent-soft); color: var(--accent)">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <div><h4 class="text-sm font-bold text-slate-200" id="catalyst-title">催化剂</h4>
+                             <p class="text-xs acc-text" id="catalyst-sub">显示催化剂如何参与反应</p></div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" id="catalyst-toggle" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:rounded-full after:h-5 after:w-5 after:transition-all" style="--tw-bg-opacity:1"></div>
+                    </label>
+                </div>
+
+                <!-- Atom legend -->
+                <div class="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
+                    <span class="text-[11px] font-bold text-slate-400 tracking-wider uppercase" id="legend-label">原子图例</span>
+                    <div id="legend-grid" class="grid grid-cols-2 gap-2.5 mt-3 text-xs"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    const DATA = __REACTION_DATA__;
+    (function () {
+        const META = DATA.meta, COND = DATA.conditions || {}, UI = DATA.ui || {};
+        const ACCENTS = { amber:'#f59e0b', indigo:'#6366f1', emerald:'#10b981', sky:'#0ea5e9',
+            violet:'#8b5cf6', rose:'#f43f5e', cyan:'#06b6d4', red:'#ef4444', green:'#22c55e',
+            orange:'#f97316', blue:'#3b82f6', slate:'#64748b', teal:'#14b8a6' };
+        const ACC = ACCENTS[META.accent] || ACCENTS.indigo;
+        function hexToRgba(h, a) { const n = parseInt(h.slice(1), 16);
+            return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+        document.documentElement.style.setProperty('--accent', ACC);
+        document.documentElement.style.setProperty('--accent-soft', hexToRgba(ACC, 0.25));
+
+        // Phase boundaries (approach / transition / separate)
+        const P1 = 0.4, P2 = 0.7;
+        function phaseOf(p) {
+            if (p < P1) return { phase: 1, t: p / P1 };
+            if (p <= P2) return { phase: 2, t: (p - P1) / (P2 - P1) };
+            return { phase: 3, t: (p - P2) / (1 - P2) };
+        }
+        const smooth = t => t * t * (3 - 2 * t);
+        const BOND_COLOR = 0x475569, BROKEN_COLOR = 0xf59e0b, BROKEN_EMIT = 0xef4444,
+              FORMED_COLOR = 0x34d399, FORMED_EMIT = 0x059669;
+
+        // ---- State ----
+        let scene, camera, renderer, controls;
+        let progress = 0, isPlaying = false, playRAF = null, slideRAF = null;
+        let showFlame = true, showCatalyst = true;
+        const container = document.getElementById('canvas-container');
+        const atoms = {};       // id -> {el, mesh, start, end, cur, frag, flocal}
+        const fragments = {};    // id -> {catalyst, K0,K1,K2, curPos, curRot, sprite, light}
+        const bondList = [];     // {a,b,order,kind, cyls:[]}
+        let flameLight, flameSprite, transitionLight;
+        const electronSprites = [];
+
+        // ===== Geometry helpers =====
+        const geomCache = {};
+        function sphereGeom(r) { const k = r.toFixed(3);
+            return geomCache[k] || (geomCache[k] = new THREE.SphereGeometry(r, 28, 28)); }
+        const cylGeo = new THREE.CylinderGeometry(1, 1, 1, 10);
+
+        function radialGlow(color) {
+            const c = document.createElement('canvas'); c.width = c.height = 64;
+            const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 30);
+            g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.2, color);
+            g.addColorStop(0.5, hexToRgba(color, 0.4)); g.addColorStop(1, 'rgba(0,0,0,0)');
+            x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(c);
+        }
+
+        // ===== Build scene =====
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0f1d);
+            scene.fog = new THREE.FogExp2(0x0a0f1d, 0.038);
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 4, 13);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; controls.dampingFactor = 0.05;
+            controls.maxDistance = 28; controls.minDistance = 3;
+
+            scene.add(new THREE.AmbientLight(0x1e293b, 1.0));
+            const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+            dir.position.set(5, 12, 8); dir.castShadow = true;
+            dir.shadow.mapSize.set(2048, 2048); dir.shadow.bias = -0.001; scene.add(dir);
+            const fill = new THREE.DirectionalLight(0x38bdf8, 0.35); fill.position.set(-6, -5, -4); scene.add(fill);
+
+            transitionLight = new THREE.PointLight(0xffcc00, 0, 14);
+            transitionLight.position.set(0, 0.4, 0); scene.add(transitionLight);
+
+            if (COND.flame) {
+                flameLight = new THREE.PointLight(0xff7a18, 0, 16);
+                flameLight.position.set(0, 0.5, 0); scene.add(flameLight);
+                flameSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                    map: radialGlow('#ffae00'), color: 0xff8a00, transparent: true,
+                    blending: THREE.AdditiveBlending, opacity: 0 }));
+                flameSprite.scale.set(0.1, 0.1, 0.1); flameSprite.position.set(0, 0.5, 0); scene.add(flameSprite);
+            }
+
+            const grid = new THREE.GridHelper(34, 34, 0x1e293b, 0x0f172a); grid.position.y = -4.5; scene.add(grid);
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: 0.15 }));
+            floor.rotation.x = -Math.PI / 2; floor.position.y = -4.45; floor.receiveShadow = true; scene.add(floor);
+
+            buildAtoms(); buildFragments(); buildBonds(); buildElectrons();
+            window.addEventListener('resize', onResize);
+        }
+
+        function buildAtoms() {
+            DATA.atoms.forEach(a => {
+                const mat = new THREE.MeshStandardMaterial({ color: a.color, roughness: 0.28, metalness: 0.08 });
+                const mesh = new THREE.Mesh(sphereGeom(a.radius), mat);
+                mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh);
+                atoms[a.id] = {
+                    el: a.el, mesh,
+                    start: new THREE.Vector3().fromArray(a.start),
+                    end: new THREE.Vector3().fromArray(a.end),
+                    cur: new THREE.Vector3().fromArray(a.start),
+                    frag: a.frag || null,
+                    flocal: a.flocal ? new THREE.Vector3().fromArray(a.flocal) : null,
+                };
+            });
+        }
+
+        function buildFragments() {
+            (DATA.fragments || []).forEach(f => {
+                const frag = { catalyst: !!f.catalyst, K0: f.K0, K1: f.K1, K2: f.K2,
+                    curPos: new THREE.Vector3(), curRot: [0, 0, 0] };
+                if (f.catalyst) {
+                    frag.sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                        map: radialGlow('#22d3ee'), color: 0x22d3ee, transparent: true,
+                        blending: THREE.AdditiveBlending, opacity: 0.9 }));
+                    frag.sprite.scale.set(1.4, 1.4, 1.4); scene.add(frag.sprite);
+                    frag.light = new THREE.PointLight(0x22d3ee, 1.0, 4); scene.add(frag.light);
+                }
+                fragments[f.id] = frag;
+            });
+        }
+
+        function makeBondMat() {
+            return new THREE.MeshStandardMaterial({ color: BOND_COLOR, roughness: 0.4, metalness: 0.1,
+                transparent: true, opacity: 1, emissive: 0x000000, emissiveIntensity: 0 });
+        }
+        function buildBonds() {
+            const add = (b, kind) => {
+                const order = b.order === 'ionic' ? 1 : b.order;
+                const count = (b.order === 2) ? 2 : (b.order === 3 ? 3 : 1);
+                const cyls = [];
+                for (let i = 0; i < count; i++) {
+                    const m = new THREE.Mesh(cylGeo, makeBondMat()); m.castShadow = true; m.visible = false;
+                    scene.add(m); cyls.push(m);
+                }
+                bondList.push({ a: b.a, b: b.b, order: b.order, ionic: b.order === 'ionic', kind, cyls });
+            };
+            DATA.bonds.kept.forEach(b => add(b, 'kept'));
+            DATA.bonds.broken.forEach(b => add(b, 'broken'));
+            DATA.bonds.formed.forEach(b => add(b, 'formed'));
+        }
+
+        function buildElectrons() {
+            (DATA.electrons || []).forEach(() => {
+                const s = new THREE.Sprite(new THREE.SpriteMaterial({
+                    map: radialGlow('#67e8f9'), color: 0x67e8f9, transparent: true,
+                    blending: THREE.AdditiveBlending, opacity: 0 }));
+                s.scale.set(0.55, 0.55, 0.55); scene.add(s); electronSprites.push(s);
+            });
+        }
+
+        // ===== Position resolvers =====
+        function molBob(seed, time) {
+            let h = 0; for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 997;
+            const ph = h * 0.0063;
+            return new THREE.Vector3(Math.sin(time * 0.6 + ph) * 0.11,
+                Math.cos(time * 0.5 + ph) * 0.11, Math.sin(time * 0.4 + ph) * 0.09);
+        }
+        const _tmp = new THREE.Vector3();
+        function morphPositions(p, time) {
+            const ph = phaseOf(p);
+            for (const id in atoms) {
+                const a = atoms[id];
+                if (ph.phase === 1) {
+                    a.cur.copy(a.start).add(molBob(a.frag || 'r', time));
+                } else if (ph.phase === 2) {
+                    const t = smooth(ph.t), amp = 0.1 * Math.sin(ph.t * Math.PI);
+                    a.cur.lerpVectors(a.start, a.end, t);
+                    a.cur.x += (Math.random() - 0.5) * amp;
+                    a.cur.y += (Math.random() - 0.5) * amp;
+                    a.cur.z += (Math.random() - 0.5) * amp;
+                } else {
+                    a.cur.copy(a.end).add(molBob(a.frag || 'p', time));
+                }
+                a.mesh.position.copy(a.cur);
+            }
+        }
+        const _eu = new THREE.Euler();
+        function lerpArr(A, B, t) { return [A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t, A[2]+(B[2]-A[2])*t]; }
+        function mechanismPositions(p, time) {
+            const ph = phaseOf(p);
+            for (const fid in fragments) {
+                const f = fragments[fid];
+                let pos, rot;
+                if (ph.phase === 1) { pos = lerpArr(f.K0.pos, f.K1.pos, ph.t); rot = lerpArr(f.K0.rot, f.K1.rot, ph.t); }
+                else if (ph.phase === 2) {
+                    const j = 0.045 * Math.sin(ph.t * Math.PI);
+                    pos = [f.K1.pos[0] + (Math.random()-0.5)*j, f.K1.pos[1] + (Math.random()-0.5)*j, f.K1.pos[2] + (Math.random()-0.5)*j];
+                    rot = f.K1.rot;
+                } else { pos = lerpArr(f.K1.pos, f.K2.pos, ph.t); rot = lerpArr(f.K1.rot, f.K2.rot, ph.t); }
+                f.curPos.set(pos[0], pos[1], pos[2]); f.curRot = rot;
+                if (f.sprite) { f.sprite.position.copy(f.curPos); f.light.position.copy(f.curPos);
+                    f.sprite.visible = f.light.visible = showCatalyst; }
+            }
+            for (const id in atoms) {
+                const a = atoms[id]; const f = fragments[a.frag];
+                if (!f || !a.flocal) { a.mesh.position.copy(a.cur); continue; }
+                _eu.set(f.curRot[0], f.curRot[1], f.curRot[2]);
+                a.cur.copy(a.flocal).applyEuler(_eu).add(f.curPos);
+                a.mesh.position.copy(a.cur);
+                if (f.catalyst) a.mesh.visible = showCatalyst;
+            }
+        }
+
+        // ===== Bonds =====
+        const _dir = new THREE.Vector3(), _mid = new THREE.Vector3(), _perp = new THREE.Vector3(),
+              _up = new THREE.Vector3(0, 1, 0);
+        function placeCyl(mesh, A, B, radius, opacity, color, emit, emitI) {
+            if (opacity <= 0.02) { mesh.visible = false; return; }
+            mesh.visible = true;
+            _dir.subVectors(B, A); const len = _dir.length();
+            mesh.scale.set(radius, len, radius);
+            _mid.addVectors(A, B).multiplyScalar(0.5); mesh.position.copy(_mid);
+            mesh.quaternion.setFromUnitVectors(_up, _dir.clone().normalize());
+            mesh.material.opacity = opacity; mesh.material.color.setHex(color);
+            mesh.material.emissive.setHex(emit); mesh.material.emissiveIntensity = emitI;
+        }
+        function drawBond(b, p) {
+            const A = atoms[b.a].cur, B = atoms[b.b].cur;
+            const ph = phaseOf(p);
+            let opacity = 1, color = BOND_COLOR, emit = 0x000000, emitI = 0, glow = false;
+            if (b.kind === 'broken') {
+                if (ph.phase === 1) opacity = 1;
+                else if (ph.phase === 2) { opacity = 1 - ph.t; glow = true; }
+                else opacity = 0;
+            } else if (b.kind === 'formed') {
+                if (ph.phase === 1) opacity = 0;
+                else if (ph.phase === 2) { opacity = ph.t; glow = true; }
+                else opacity = 1;
+            }
+            if (glow) {
+                const pulse = 1.0 + Math.sin(Date.now() * 0.01) * 0.5;
+                if (b.kind === 'broken') { color = BROKEN_COLOR; emit = BROKEN_EMIT; }
+                else { color = FORMED_COLOR; emit = FORMED_EMIT; }
+                emitI = pulse;
+            }
+            const baseR = b.ionic ? 0.035 : (b.order === 2 || b.order === 3 ? 0.06 : 0.08);
+            const op = b.ionic ? opacity * 0.5 : opacity;
+            if (b.cyls.length === 1) {
+                placeCyl(b.cyls[0], A, B, glow ? baseR * 0.85 : baseR, op, color, emit, emitI);
+            } else {
+                _dir.subVectors(B, A).normalize();
+                _perp.set(-_dir.y, _dir.x, 0);
+                if (_perp.lengthSq() < 0.01) _perp.set(0, -_dir.z, _dir.y);
+                _perp.normalize().multiplyScalar(0.14);
+                if (b.cyls.length === 2) {
+                    placeCyl(b.cyls[0], A.clone().add(_perp), B.clone().add(_perp), baseR, op, color, emit, emitI);
+                    placeCyl(b.cyls[1], A.clone().sub(_perp), B.clone().sub(_perp), baseR, op, color, emit, emitI);
+                } else {
+                    placeCyl(b.cyls[0], A, B, baseR, op, color, emit, emitI);
+                    placeCyl(b.cyls[1], A.clone().add(_perp), B.clone().add(_perp), baseR, op, color, emit, emitI);
+                    placeCyl(b.cyls[2], A.clone().sub(_perp), B.clone().sub(_perp), baseR, op, color, emit, emitI);
+                }
+            }
+        }
+
+        // ===== Overlays =====
+        function updateFlame(p) {
+            if (!COND.flame) return;
+            const ph = phaseOf(p);
+            let intensity = 0;
+            if (ph.phase === 2) intensity = Math.sin(ph.t * Math.PI);
+            else if (ph.phase === 3) intensity = Math.max(0, 1 - ph.t) * 0.3;
+            if (!showFlame) intensity = 0;
+            const flick = 0.85 + Math.sin(Date.now() * 0.03) * 0.15;
+            flameLight.intensity = intensity * 6 * flick;
+            flameSprite.material.opacity = intensity * flick;
+            const s = 0.5 + intensity * 5.5 * flick; flameSprite.scale.set(s, s, s);
+            flameSprite.visible = showFlame && intensity > 0.01;
+        }
+        function updateTransitionGlow(p) {
+            const ph = phaseOf(p);
+            const on = COND.transitionGlow || (DATA.fragments || []).length;
+            transitionLight.intensity = (on && ph.phase === 2) ? Math.sin(ph.t * Math.PI) * 2.5 : 0;
+        }
+        function updateElectrons(p) {
+            const defs = DATA.electrons || []; if (!defs.length) return;
+            const ph = phaseOf(p);
+            defs.forEach((d, i) => {
+                const s = electronSprites[i]; if (!atoms[d.from] || !atoms[d.to]) return;
+                if (ph.phase === 2) {
+                    const t = smooth(ph.t);
+                    s.position.lerpVectors(atoms[d.from].cur, atoms[d.to].cur, t);
+                    s.position.y += Math.sin(ph.t * Math.PI) * 0.6;
+                    s.material.opacity = Math.sin(ph.t * Math.PI);
+                    s.visible = true;
+                } else { s.visible = false; }
+            });
+        }
+
+        // ===== Labels =====
+        const _v = new THREE.Vector3();
+        function centroid(ids) { _v.set(0, 0, 0); ids.forEach(id => _v.add(atoms[id].cur)); return _v.clone().divideScalar(ids.length); }
+        function buildLabels() {
+            const overlay = document.getElementById('labels-overlay');
+            (DATA.labels || []).forEach(l => {
+                const el = document.createElement('div');
+                el.id = 'lbl-' + l.id;
+                el.className = 'absolute text-white text-xs font-semibold px-2 py-1 rounded shadow-lg transition-opacity duration-300 transform -translate-x-1/2 -translate-y-full border';
+                el.style.background = hexToRgba(ACC, 0.0);
+                const c = ({ red:'#ef4444', cyan:'#06b6d4', blue:'#3b82f6', emerald:'#10b981', slate:'#475569',
+                    violet:'#8b5cf6', green:'#22c55e', sky:'#0ea5e9', orange:'#f97316' })[l.color] || ACC;
+                el.style.background = hexToRgba(c, 0.9); el.style.borderColor = hexToRgba(c, 1);
+                el.textContent = l.text; el.dataset.phase = l.phase;
+                overlay.appendChild(el); l._el = el; l._ids = l.atoms;
+            });
+        }
+        function updateLabels(p) {
+            const rect = container.getBoundingClientRect();
+            const reactantPhase = p < 0.55;
+            (DATA.labels || []).forEach(l => {
+                const show = l.phase === 'reactant' ? reactantPhase : !reactantPhase;
+                const el = l._el;
+                if (!show) { el.style.opacity = '0'; return; }
+                const c = centroid(l._ids); _v.copy(c).project(camera);
+                if (_v.z > 1) { el.style.opacity = '0'; return; }
+                el.style.opacity = '1';
+                el.style.left = ((_v.x * 0.5 + 0.5) * rect.width) + 'px';
+                el.style.top = ((_v.y * -0.5 + 0.5) * rect.height) + 'px';
+            });
+        }
+
+        // ===== Energy diagram =====
+        function drawEnergy(p) {
+            const E = DATA.energy; if (!E) return;
+            const cv = document.getElementById('energy-canvas'), x = cv.getContext('2d');
+            const W = cv.width, H = cv.height, pad = 14;
+            x.clearRect(0, 0, W, H);
+            const y0 = 0.72, act = E.activation != null ? E.activation : 0.7, dH = E.deltaH != null ? E.deltaH : -0.4;
+            const yEnd = y0 + dH;
+            const peakX = 0.45, peak = Math.max(y0, yEnd) + act * 0.5 + 0.1;
+            const Y = v => pad + (1 - v) * (H - 2 * pad);
+            const X = u => pad + u * (W - 2 * pad);
+            // curve
+            x.strokeStyle = ACC; x.lineWidth = 2; x.beginPath();
+            for (let i = 0; i <= 60; i++) {
+                const u = i / 60; let yv;
+                if (u < peakX) { const k = u / peakX; yv = y0 + (peak - y0) * (k * k * (3 - 2 * k)); }
+                else { const k = (u - peakX) / (1 - peakX); yv = peak + (yEnd - peak) * (k * k * (3 - 2 * k)); }
+                const px = X(u), py = Y(yv); i ? x.lineTo(px, py) : x.moveTo(px, py);
+            }
+            x.stroke();
+            // marker
+            const u = Math.min(1, p); let yv;
+            if (u < peakX) { const k = u / peakX; yv = y0 + (peak - y0) * (k * k * (3 - 2 * k)); }
+            else { const k = (u - peakX) / (1 - peakX); yv = peak + (yEnd - peak) * (k * k * (3 - 2 * k)); }
+            x.fillStyle = '#fff'; x.beginPath(); x.arc(X(u), Y(yv), 3.5, 0, 7); x.fill();
+            // baseline labels
+            x.fillStyle = '#64748b'; x.font = '9px sans-serif';
+            x.fillText(E.reactantLabel || '反应物', pad, Y(y0) - 4);
+            x.fillText(E.productLabel || '产物', W - pad - 26, Y(yEnd) - 4);
+        }
+
+        // ===== Render loop =====
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            const p = progress / 100, time = Date.now() * 0.001;
+            const pct = Math.round(progress);
+            document.getElementById('progress-readout').textContent = pct + '%';
+            document.getElementById('viewport-progress').style.width = pct + '%';
+
+            if (META.engine === 'mechanism') mechanismPositions(p, time); else morphPositions(p, time);
+            bondList.forEach(b => drawBond(b, p));
+            updateFlame(p); updateTransitionGlow(p); updateElectrons(p);
+            updateLabels(p); drawEnergy(p);
+            updateStep(p);
+            renderer.render(scene, camera);
+        }
+
+        // ===== Stepper / explanation =====
+        const steps = DATA.steps || [];
+        function buildStepper() {
+            const wrap = document.getElementById('stepper');
+            steps.forEach((s, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'flex flex-col items-center gap-2 cursor-pointer focus:outline-none';
+                btn.onclick = () => jumpToStep(i + 1);
+                btn.innerHTML = `<span id="step-circle-${i+1}" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 bg-slate-900 border-slate-700 text-slate-500">${i+1}</span>
+                    <span id="step-label-${i+1}" class="text-xs transition-colors duration-300 text-slate-500 max-w-[90px] text-center leading-tight">${s.title || ('步骤'+(i+1))}</span>`;
+                wrap.appendChild(btn);
+            });
+        }
+        let lastStep = -1;
+        function stepIndexFor(p) {
+            if (steps.length <= 1) return 1;
+            if (p < P1) return 1;
+            if (p <= P2) return Math.min(2, steps.length);
+            return steps.length;
+        }
+        function updateStep(p) {
+            const n = stepIndexFor(p);
+            if (n === lastStep) return; lastStep = n;
+            for (let i = 1; i <= steps.length; i++) {
+                const circle = document.getElementById('step-circle-' + i);
+                const label = document.getElementById('step-label-' + i);
+                const on = i <= n;
+                circle.style.background = on ? ACC : '';
+                circle.style.borderColor = on ? ACC : '';
+                circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 ' +
+                    (on ? 'text-white shadow-lg' : 'bg-slate-900 border-slate-700 text-slate-500');
+                label.className = 'text-xs transition-colors duration-300 max-w-[90px] text-center leading-tight ' +
+                    (on ? 'text-slate-200 font-semibold' : 'text-slate-500');
+            }
+            document.getElementById('step-progress-line').style.width = (((n - 1) / Math.max(1, steps.length - 1)) * 100) + '%';
+            const s = steps[n - 1] || {};
+            document.getElementById('step-title-text').textContent = `${n}. ${s.title || ''}`;
+            document.getElementById('explanation-text').innerHTML = s.html || '';
+            if (s.camera && !controls._userMoved) { /* optional camera cue, skipped to respect user control */ }
+        }
+
+        // ===== Controls =====
+        function jumpToStep(n) {
+            const target = steps.length <= 1 ? 0 : Math.round(((n - 1) / (steps.length - 1)) * 100);
+            animateSliderTo(target);
+        }
+        function animateSliderTo(target) {
+            if (isPlaying) togglePlay();
+            if (slideRAF) cancelAnimationFrame(slideRAF);
+            const slider = document.getElementById('reaction-slider');
+            (function step() {
+                const cur = parseFloat(slider.value), diff = target - cur;
+                if (Math.abs(diff) < 2) { slider.value = target; progress = target; }
+                else { const nx = cur + Math.sign(diff) * 3; slider.value = nx; progress = nx; slideRAF = requestAnimationFrame(step); }
+            })();
+        }
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('play-btn'), txt = document.getElementById('play-text');
+            if (isPlaying) {
+                if (progress >= 100) { progress = 0; document.getElementById('reaction-slider').value = 0; }
+                txt.textContent = UI.pause || '暂停演示';
+                btn.firstElementChild.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+                playLoop();
+            } else {
+                txt.textContent = UI.play || '自动演示';
+                btn.firstElementChild.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+                if (playRAF) { cancelAnimationFrame(playRAF); playRAF = null; }
+            }
+        }
+        function playLoop() {
+            if (!isPlaying) return;
+            progress += 0.5;
+            if (progress >= 100) { progress = 100; document.getElementById('reaction-slider').value = 100; togglePlay(); return; }
+            document.getElementById('reaction-slider').value = progress;
+            playRAF = requestAnimationFrame(playLoop);
+        }
+        function onResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // ===== Static UI from data =====
+        function paintStaticUI() {
+            document.title = (META.title || '化学反应') + ' · 微观3D演示';
+            document.documentElement.lang = META.language || 'zh-CN';
+            document.getElementById('title').textContent = META.title || '';
+            document.getElementById('subtitle').textContent = META.subtitle || '';
+            document.getElementById('equation-container').innerHTML = '$$' + (META.equation || '') + '$$';
+            document.getElementById('drag-hint').textContent = UI.drag || '拖拽旋转 · 滚轮缩放 · 右键平移';
+            document.getElementById('progress-label').textContent = UI.progress || '反应进度';
+            document.getElementById('slider-hint').textContent = UI.hint || '';
+            document.getElementById('play-text').textContent = UI.play || '自动演示';
+            document.getElementById('legend-label').textContent = UI.legend || '原子图例';
+            document.getElementById('conservation-label').textContent = UI.conservation || '原子守恒';
+            // conservation chips
+            const chips = document.getElementById('conservation-chips');
+            const colorOf = {}; (DATA.legend || []).forEach(l => colorOf[l.el] = l.color);
+            Object.entries(DATA.elementCounts || {}).forEach(([el, n]) => {
+                const d = document.createElement('div');
+                d.className = 'flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/60 border border-slate-800 text-xs';
+                d.innerHTML = `<span class="w-3 h-3 rounded-full inline-block" style="background:${colorOf[el]||'#94a3b8'}"></span>
+                    <span class="text-slate-300 font-mono">${el} ×${n}</span>`;
+                chips.appendChild(d);
+            });
+            // legend
+            const lg = document.getElementById('legend-grid');
+            (DATA.legend || []).forEach(l => {
+                const d = document.createElement('div'); d.className = 'flex items-center space-x-2 text-slate-300';
+                d.innerHTML = `<span class="w-3.5 h-3.5 rounded-full inline-block shrink-0" style="background:${l.color}"></span><span>${l.name} ${l.el}</span>`;
+                lg.appendChild(d);
+            });
+            if (COND.flame) {
+                const t = document.getElementById('toggle-flame'); t.classList.remove('hidden'); t.classList.add('flex');
+            }
+            if (COND.catalyst) {
+                const t = document.getElementById('toggle-catalyst'); t.classList.remove('hidden'); t.classList.add('flex');
+                document.getElementById('catalyst-title').textContent = (COND.catalyst.label || '催化剂');
+            }
+            if (DATA.energy) {
+                document.getElementById('energy-panel').classList.remove('hidden');
+                document.getElementById('energy-title').textContent = UI.energy || '能量·反应进程';
+            }
+        }
+
+        function bindEvents() {
+            const slider = document.getElementById('reaction-slider');
+            slider.addEventListener('input', e => {
+                if (isPlaying) togglePlay();
+                if (slideRAF) { cancelAnimationFrame(slideRAF); slideRAF = null; }
+                progress = parseFloat(e.target.value);
+            });
+            document.getElementById('play-btn').addEventListener('click', togglePlay);
+            document.getElementById('reset-btn').addEventListener('click', () => {
+                if (isPlaying) togglePlay();
+                if (slideRAF) { cancelAnimationFrame(slideRAF); slideRAF = null; }
+                progress = 0; slider.value = 0;
+                camera.position.set(0, 4, 13); controls.target.set(0, 0, 0);
+            });
+            document.getElementById('prev-btn').addEventListener('click', () => jumpToStep(Math.max(1, stepIndexFor(progress / 100) - 1)));
+            document.getElementById('next-btn').addEventListener('click', () => jumpToStep(Math.min(steps.length, stepIndexFor(progress / 100) + 1)));
+            const ft = document.getElementById('flame-toggle');
+            if (ft) ft.addEventListener('change', e => showFlame = e.target.checked);
+            const ct = document.getElementById('catalyst-toggle');
+            if (ct) ct.addEventListener('change', e => showCatalyst = e.target.checked);
+        }
+
+        window.onload = function () {
+            paintStaticUI(); buildStepper(); init3D(); buildLabels(); bindEvents();
+            updateStep(0); lastStep = -1;
+            animate();
+            if (typeof renderMathInElement === 'function') {
+                renderMathInElement(document.body, { delimiters: [
+                    { left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
+            }
+        };
+    })();
+    </script>
+</body>
+</html>
