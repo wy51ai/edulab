@@ -277,32 +277,102 @@ def build_esterification():
     }
 
 
+# =====================================================================
+# 6) 葡萄糖有氧氧化（细胞呼吸·morph·36原子·暗色·火焰·放热）—— 最复杂示例
+# =====================================================================
+def build_glucose_combustion():
+    return {
+        "meta": {
+            "title": "葡萄糖的有氧氧化",
+            "subtitle": "C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O（细胞呼吸核心反应）",
+            "language": "zh-CN",
+            "category": "inorganic",
+            "accent": "amber",
+            "engine": "morph",
+        },
+        "conditions": {"text": "酶催化", "exothermic": True, "flame": True},
+        "reactants": [
+            {"species": "Glucose", "count": 1},
+            {"species": "O2", "count": 6},
+        ],
+        "products": [
+            {"species": "CO2", "count": 6},
+            {"species": "H2O", "count": 6},
+        ],
+        "atom_map": [
+            # 6 个碳原子 → 6 个 CO₂ 的中心碳
+            ["Glucose#1.C1", "CO2#1.Y"], ["Glucose#1.C2", "CO2#2.Y"],
+            ["Glucose#1.C3", "CO2#3.Y"], ["Glucose#1.C4", "CO2#4.Y"],
+            ["Glucose#1.C5", "CO2#5.Y"], ["Glucose#1.C6", "CO2#6.Y"],
+            # 葡萄糖 6 个 O → 6 个 H₂O 的氧
+            ["Glucose#1.O1", "H2O#1.A"], ["Glucose#1.O2", "H2O#2.A"],
+            ["Glucose#1.O3", "H2O#3.A"], ["Glucose#1.O4", "H2O#4.A"],
+            ["Glucose#1.O5", "H2O#5.A"], ["Glucose#1.O6", "H2O#6.A"],
+            # 葡萄糖 12 个 H → 6 个 H₂O 各 2 个 H
+            ["Glucose#1.H1",  "H2O#1.Ha"], ["Glucose#1.HO2", "H2O#1.Hb"],
+            ["Glucose#1.H2",  "H2O#2.Ha"], ["Glucose#1.HO3", "H2O#2.Hb"],
+            ["Glucose#1.H3",  "H2O#3.Ha"], ["Glucose#1.HO4", "H2O#3.Hb"],
+            ["Glucose#1.H4",  "H2O#4.Ha"], ["Glucose#1.HO5", "H2O#4.Hb"],
+            ["Glucose#1.H5",  "H2O#5.Ha"], ["Glucose#1.HO6", "H2O#5.Hb"],
+            ["Glucose#1.H6a", "H2O#6.Ha"], ["Glucose#1.H6b", "H2O#6.Hb"],
+            # 6 个 O₂（12 个 O）→ 6 个 CO₂ 的两端氧
+            ["O2#1.Oa", "CO2#1.Xa"], ["O2#1.Ob", "CO2#1.Xb"],
+            ["O2#2.Oa", "CO2#2.Xa"], ["O2#2.Ob", "CO2#2.Xb"],
+            ["O2#3.Oa", "CO2#3.Xa"], ["O2#3.Ob", "CO2#3.Xb"],
+            ["O2#4.Oa", "CO2#4.Xa"], ["O2#4.Ob", "CO2#4.Xb"],
+            ["O2#5.Oa", "CO2#5.Xa"], ["O2#5.Ob", "CO2#5.Xb"],
+            ["O2#6.Oa", "CO2#6.Xa"], ["O2#6.Ob", "CO2#6.Xb"],
+        ],
+        "energy": {
+            "activation": 0.25,
+            "deltaH": -0.95,
+            "reactantLabel": "C₆H₁₂O₆+O₂",
+            "productLabel": "CO₂+H₂O",
+        },
+        "steps": [
+            {
+                "title": "反应物：葡萄糖与 6 个氧分子",
+                "html": (
+                    "<span class='text-amber-300 font-semibold'>葡萄糖 (C₆H₁₂O₆)</span> 是 6 碳醛糖，"
+                    "含 1 个醛基（C₁=O）、5 个羟基（C–OH）和 5 根 C–C 骨架键，共 24 个原子。"
+                    "<span class='text-red-400 font-semibold'>6 个 O₂</span> 提供 12 个氧原子。"
+                    "这是生命<span class='text-amber-400'>细胞呼吸</span>的核心放热反应，释放 △G ≈ −2803 kJ/mol。"
+                ),
+            },
+            {
+                "title": "碳骨架逐步断裂·键全面重组",
+                "html": (
+                    "在细胞酶系（糖酵解→丙酮酸脱氢→三羧酸循环）的催化下，"
+                    "C–C 链与 C–H 键<span class='border-b border-dashed border-red-400'>逐步断裂</span>，"
+                    "O=O 键同步裂开；碳原子逐一氧化。共断裂 <span class='text-red-400 font-semibold'>17+ 根旧键</span>，"
+                    "同时形成 <span class='text-green-400 font-semibold'>18 根新键</span>（12 根 C=O 和 12 根 O–H）。"
+                ),
+            },
+            {
+                "title": "生成 6CO₂ + 6H₂O · 原子守恒",
+                "html": (
+                    "6 个碳原子各与 2 个来自 O₂ 的氧原子结合，生成"
+                    "<span class='text-slate-200 font-semibold'> 6 分子 CO₂</span>（线形，两个 C=O）；"
+                    "12 个氢原子与葡萄糖内的 6 个氧原子结合，生成"
+                    "<span class='text-cyan-300 font-semibold'> 6 分子 H₂O</span>（弯曲形）。"
+                    "原子守恒：反应前后各 6C · 12H · 18O，质量守恒。"
+                ),
+            },
+        ],
+    }
+
+
 REGISTRY = {
     "combustion_ch4": build_combustion_ch4,
     "combustion_h2": build_combustion_h2,
     "electrolysis_water": build_electrolysis_water,
     "redox_na_cl2": build_redox_na_cl2,
     "esterification": build_esterification,
+    "glucose_combustion": build_glucose_combustion,
 }
 
 
-def _build_data(key, theme=None):
-    data = K.assemble_data(REGISTRY[key]())
-    if theme:                                  # 命令行 --light/--dark 覆盖主题
-        data["meta"]["theme"] = theme
-    return data
-
-
 def main(argv):
-    # 解析主题开关：--light / --dark / --theme=light（不改各反应自身设定，仅本次输出覆盖）
-    argv = list(argv)
-    theme = None
-    for a in list(argv):
-        if a in ("--light", "--dark"):
-            theme = a[2:]; argv.remove(a)
-        elif a.startswith("--theme="):
-            theme = a.split("=", 1)[1]; argv.remove(a)
-
     if not argv or argv[0] == "list":
         print("已注册反应:")
         for k in REGISTRY:
@@ -313,14 +383,14 @@ def main(argv):
         seed = int(argv[1]) if len(argv) > 1 else 0
         out = Path(argv[2]) if len(argv) > 2 else (SKILL_DIR / "output" / "random.html")
         key = random.Random(seed).choice(list(REGISTRY))
-        render_html(_build_data(key, theme), out)
-        print(f"written: {out}  (seed={seed} -> {key}, theme={theme or 'default'})")
+        render_html(K.assemble_data(REGISTRY[key]()), out)
+        print(f"written: {out}  (seed={seed} -> {key})")
         return
     if argv[0] == "all":
         out_dir = Path(argv[1]) if len(argv) > 1 else (SKILL_DIR / "output")
         out_dir.mkdir(parents=True, exist_ok=True)
         for k in REGISTRY:
-            render_html(_build_data(k, theme), out_dir / f"{k}.html")
+            render_html(K.assemble_data(REGISTRY[k]()), out_dir / f"{k}.html")
             print("written:", out_dir / f"{k}.html")
         return
     key = argv[0]
@@ -328,8 +398,8 @@ def main(argv):
         print(f"未知反应 {key}；可用: {', '.join(REGISTRY)}")
         sys.exit(1)
     out = Path(argv[1]) if len(argv) > 1 else (SKILL_DIR / "output" / f"{key}.html")
-    render_html(_build_data(key, theme), out)
-    print(f"written: {out}  (theme={theme or 'default'})")
+    render_html(K.assemble_data(REGISTRY[key]()), out)
+    print("written:", out)
 
 
 if __name__ == "__main__":

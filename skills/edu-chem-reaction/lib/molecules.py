@@ -144,6 +144,48 @@ def _ion_pair(slot_a, el_a, slot_b, el_b, d):
     }
 
 
+def _glucose_openchain():
+    """D-葡萄糖开链式（Fischer 投影简化 3D）：6 碳醛糖，主链沿 Y 轴排列。
+    slots: C1-C6, O1-O6, H1-H5, H6a, H6b, HO2-HO6（共 24 原子）。"""
+    a, b = [], []
+    yc = [3.75, 2.25, 0.75, -0.75, -2.25, -3.75]   # C1..C6 的 y 坐标
+    # C1: 醛基 (CHO)
+    a += [_atom("C1", "C", (0,    yc[0], 0)),
+          _atom("O1", "O", (0,    yc[0] + 1.0, 0)),   # C=O 羰基
+          _atom("H1", "H", (-1.1, yc[0], 0))]          # 醛 H
+    b += [{"a": "C1", "b": "O1", "order": 2}, {"a": "C1", "b": "H1", "order": 1}]
+    # C2 (OH 右)
+    a += [_atom("C2",  "C", (0,    yc[1], 0)), _atom("O2",  "O", (1.4,  yc[1], 0)),
+          _atom("HO2", "H", (2.1,  yc[1], 0)), _atom("H2",  "H", (-1.1, yc[1], 0))]
+    b += [{"a": "C1", "b": "C2",  "order": 1}, {"a": "C2", "b": "O2",  "order": 1},
+          {"a": "O2", "b": "HO2", "order": 1}, {"a": "C2", "b": "H2",  "order": 1}]
+    # C3 (OH 左)
+    a += [_atom("C3",  "C", (0,    yc[2], 0)), _atom("O3",  "O", (-1.4, yc[2], 0)),
+          _atom("HO3", "H", (-2.1, yc[2], 0)), _atom("H3",  "H", (1.1,  yc[2], 0))]
+    b += [{"a": "C2", "b": "C3",  "order": 1}, {"a": "C3", "b": "O3",  "order": 1},
+          {"a": "O3", "b": "HO3", "order": 1}, {"a": "C3", "b": "H3",  "order": 1}]
+    # C4 (OH 右)
+    a += [_atom("C4",  "C", (0,    yc[3], 0)), _atom("O4",  "O", (1.4,  yc[3], 0)),
+          _atom("HO4", "H", (2.1,  yc[3], 0)), _atom("H4",  "H", (-1.1, yc[3], 0))]
+    b += [{"a": "C3", "b": "C4",  "order": 1}, {"a": "C4", "b": "O4",  "order": 1},
+          {"a": "O4", "b": "HO4", "order": 1}, {"a": "C4", "b": "H4",  "order": 1}]
+    # C5 (OH 左)
+    a += [_atom("C5",  "C", (0,    yc[4], 0)), _atom("O5",  "O", (-1.4, yc[4], 0)),
+          _atom("HO5", "H", (-2.1, yc[4], 0)), _atom("H5",  "H", (1.1,  yc[4], 0))]
+    b += [{"a": "C4", "b": "C5",  "order": 1}, {"a": "C5", "b": "O5",  "order": 1},
+          {"a": "O5", "b": "HO5", "order": 1}, {"a": "C5", "b": "H5",  "order": 1}]
+    # C6: 伯醇 (CH₂OH)
+    a += [_atom("C6",  "C", (0,    yc[5],        0)),
+          _atom("H6a", "H", (-0.8, yc[5] - 0.7,  0.5)),
+          _atom("H6b", "H", (-0.8, yc[5] - 0.7, -0.5)),
+          _atom("O6",  "O", (1.0,  yc[5] - 0.7,  0)),
+          _atom("HO6", "H", (1.7,  yc[5] - 0.7,  0))]
+    b += [{"a": "C5", "b": "C6",  "order": 1}, {"a": "C6", "b": "H6a", "order": 1},
+          {"a": "C6", "b": "H6b", "order": 1}, {"a": "C6", "b": "O6",  "order": 1},
+          {"a": "O6", "b": "HO6", "order": 1}]
+    return {"atoms": a, "bonds": b}
+
+
 # ---------------------------------------------------------------------------
 # 物种库：id -> 构造（几何 + 显示元数据）
 # 显示用 unicode 下标化学式 + LaTeX；name 中文、name_en 英文。
@@ -189,6 +231,9 @@ _LIBRARY_BUILDERS = {
     "Mg":  lambda: _spec("Mg", _mono("Mg"), "Mg", r"\text{Mg}", "镁", "magnesium", "slate"),
     "NaCl": lambda: _spec("NaCl", _ion_pair("Na", "Na", "Cl", "Cl", 1.50),
                           "NaCl", r"\text{NaCl}", "氯化钠", "sodium chloride", "violet"),
+    "Glucose": lambda: _spec("Glucose", _glucose_openchain(),
+                             "C₆H₁₂O₆", r"\text{C}_6\text{H}_{12}\text{O}_6",
+                             "葡萄糖", "glucose", "amber"),
 }
 
 
