@@ -12,7 +12,8 @@
   "subtitle": "CH₄ + O₂ 的氧化放热…",  // 副标题（accent 色）
   "language": "zh-CN",               // "zh-CN" | "en"，决定 UI 文案与图例语言
   "category": "junior",              // junior(初中) | inorganic(高中无机) | organic(有机机理)
-  "accent": "amber",                 // 主题色：amber/indigo/emerald/sky/violet/cyan/red/green/orange...
+  "accent": "amber",                 // 强调色：amber/indigo/emerald/sky/violet/cyan/red/green/orange...
+  "theme": "light",                  // 整体明暗：light(默认) | dark；命令行 --dark/--light 可覆盖
   "engine": "morph",                 // auto | morph | mechanism（auto：organic 或带 fragments → mechanism）
   "equation": "..."                  // 可选；不填则由配平自动生成 LaTeX（机理路径建议显式给）
 }

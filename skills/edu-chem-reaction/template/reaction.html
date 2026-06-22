@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,6 +23,41 @@
         .acc-ring:focus { outline: none; box-shadow: 0 0 0 2px var(--accent); }
         .play-btn { background: var(--accent); }
         .play-btn:hover { filter: brightness(1.12); }
+
+        /* ── 亮色主题：由 <html data-theme="light"> 触发，重映射所用到的 slate/amber 工具类 ── */
+        html[data-theme="light"] ::-webkit-scrollbar-track { background: #e2e8f0; }
+        html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        html[data-theme="light"] body { background: #eef2f7; color: #0f172a; }
+        /* 背景面 */
+        html[data-theme="light"] .bg-slate-950 { background-color: #eef2f7; }
+        html[data-theme="light"] .bg-slate-900 { background-color: #ffffff; }
+        html[data-theme="light"] .bg-slate-800 { background-color: #e2e8f0; }
+        html[data-theme="light"] .bg-slate-700 { background-color: #cbd5e1; }
+        html[data-theme="light"] .bg-slate-300 { background-color: #ffffff; }
+        html[data-theme="light"] .bg-slate-950\/60 { background-color: #f1f5f9; }
+        html[data-theme="light"] .bg-slate-950\/40 { background-color: #f8fafc; }
+        html[data-theme="light"] .bg-slate-950\/30 { background-color: #f8fafc; }
+        html[data-theme="light"] .bg-slate-900\/80 { background-color: rgba(255,255,255,0.85); }
+        html[data-theme="light"] .bg-slate-900\/60 { background-color: #f1f5f9; }
+        html[data-theme="light"] .bg-slate-800\/40 { background-color: #f1f5f9; }
+        html[data-theme="light"] .bg-amber-950\/30 { background-color: #fffbeb; }
+        html[data-theme="light"] .bg-amber-900\/60 { background-color: #fde68a; }
+        /* 边框 */
+        html[data-theme="light"] .border-slate-800,
+        html[data-theme="light"] .border-slate-800\/80 { border-color: #e2e8f0; }
+        html[data-theme="light"] .border-slate-700,
+        html[data-theme="light"] .border-slate-700\/50 { border-color: #cbd5e1; }
+        html[data-theme="light"] .border-amber-900\/50 { border-color: #fcd34d; }
+        /* 文字 */
+        html[data-theme="light"] .text-slate-100 { color: #0f172a; }
+        html[data-theme="light"] .text-slate-200 { color: #1e293b; }
+        html[data-theme="light"] .text-slate-300 { color: #334155; }
+        html[data-theme="light"] .text-slate-400 { color: #64748b; }
+        html[data-theme="light"] .text-slate-500 { color: #94a3b8; }
+        html[data-theme="light"] .text-amber-300 { color: #b45309; }
+        /* 悬停 */
+        html[data-theme="light"] .hover\:bg-slate-700:hover { background-color: #cbd5e1; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-hidden font-sans">
@@ -163,6 +198,19 @@
         document.documentElement.style.setProperty('--accent', ACC);
         document.documentElement.style.setProperty('--accent-soft', hexToRgba(ACC, 0.25));
 
+        // Theme (light default; meta.theme:"dark" switches back)
+        const THEME = (META.theme === 'dark') ? 'dark' : 'light';
+        document.documentElement.dataset.theme = THEME;
+        const THEMES = {
+            dark:  { scene: 0x0a0f1d, fog: 0.038, grid1: 0x1e293b, grid2: 0x0f172a,
+                     bond: 0x475569, amb: 0x1e293b, ambI: 1.0, dirI: 1.2, fill: 0x38bdf8,
+                     floorOp: 0.15, markerFill: '#ffffff' },
+            light: { scene: 0xeef2f7, fog: 0.022, grid1: 0xcbd5e1, grid2: 0xe2e8f0,
+                     bond: 0x94a3b8, amb: 0xffffff, ambI: 0.7, dirI: 1.05, fill: 0x93c5fd,
+                     floorOp: 0.10, markerFill: '#0f172a' }
+        };
+        const TH = THEMES[THEME];
+
         // Phase boundaries (approach / transition / separate)
         const P1 = 0.4, P2 = 0.7;
         function phaseOf(p) {
@@ -171,7 +219,7 @@
             return { phase: 3, t: (p - P2) / (1 - P2) };
         }
         const smooth = t => t * t * (3 - 2 * t);
-        const BOND_COLOR = 0x475569, BROKEN_COLOR = 0xf59e0b, BROKEN_EMIT = 0xef4444,
+        const BOND_COLOR = TH.bond, BROKEN_COLOR = 0xf59e0b, BROKEN_EMIT = 0xef4444,
               FORMED_COLOR = 0x34d399, FORMED_EMIT = 0x059669;
 
         // ---- State ----
@@ -203,8 +251,8 @@
         // ===== Build scene =====
         function init3D() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0f1d);
-            scene.fog = new THREE.FogExp2(0x0a0f1d, 0.038);
+            scene.background = new THREE.Color(TH.scene);
+            scene.fog = new THREE.FogExp2(TH.scene, TH.fog);
             camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
             camera.position.set(0, 4, 13);
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -217,11 +265,11 @@
             controls.enableDamping = true; controls.dampingFactor = 0.05;
             controls.maxDistance = 28; controls.minDistance = 3;
 
-            scene.add(new THREE.AmbientLight(0x1e293b, 1.0));
-            const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+            scene.add(new THREE.AmbientLight(TH.amb, TH.ambI));
+            const dir = new THREE.DirectionalLight(0xffffff, TH.dirI);
             dir.position.set(5, 12, 8); dir.castShadow = true;
             dir.shadow.mapSize.set(2048, 2048); dir.shadow.bias = -0.001; scene.add(dir);
-            const fill = new THREE.DirectionalLight(0x38bdf8, 0.35); fill.position.set(-6, -5, -4); scene.add(fill);
+            const fill = new THREE.DirectionalLight(TH.fill, 0.35); fill.position.set(-6, -5, -4); scene.add(fill);
 
             transitionLight = new THREE.PointLight(0xffcc00, 0, 14);
             transitionLight.position.set(0, 0.4, 0); scene.add(transitionLight);
@@ -235,19 +283,24 @@
                 flameSprite.scale.set(0.1, 0.1, 0.1); flameSprite.position.set(0, 0.5, 0); scene.add(flameSprite);
             }
 
-            const grid = new THREE.GridHelper(34, 34, 0x1e293b, 0x0f172a); grid.position.y = -4.5; scene.add(grid);
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: 0.15 }));
+            const grid = new THREE.GridHelper(34, 34, TH.grid1, TH.grid2); grid.position.y = -4.5; scene.add(grid);
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: TH.floorOp }));
             floor.rotation.x = -Math.PI / 2; floor.position.y = -4.45; floor.receiveShadow = true; scene.add(floor);
 
             buildAtoms(); buildFragments(); buildBonds(); buildElectrons();
             window.addEventListener('resize', onResize);
         }
 
+        const OUTLINE_MAT = new THREE.MeshBasicMaterial({ color: 0x334155, side: THREE.BackSide });
         function buildAtoms() {
             DATA.atoms.forEach(a => {
                 const mat = new THREE.MeshStandardMaterial({ color: a.color, roughness: 0.28, metalness: 0.08 });
                 const mesh = new THREE.Mesh(sphereGeom(a.radius), mat);
                 mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh);
+                if (THEME === 'light') {            // 亮色主题给原子描一圈深色边，提升对比
+                    const outline = new THREE.Mesh(sphereGeom(a.radius), OUTLINE_MAT);
+                    outline.scale.setScalar(1.07); mesh.add(outline);
+                }
                 atoms[a.id] = {
                     el: a.el, mesh,
                     start: new THREE.Vector3().fromArray(a.start),
@@ -498,7 +551,7 @@
             const u = Math.min(1, p); let yv;
             if (u < peakX) { const k = u / peakX; yv = y0 + (peak - y0) * (k * k * (3 - 2 * k)); }
             else { const k = (u - peakX) / (1 - peakX); yv = peak + (yEnd - peak) * (k * k * (3 - 2 * k)); }
-            x.fillStyle = '#fff'; x.beginPath(); x.arc(X(u), Y(yv), 3.5, 0, 7); x.fill();
+            x.fillStyle = TH.markerFill; x.beginPath(); x.arc(X(u), Y(yv), 3.5, 0, 7); x.fill();
             // baseline labels
             x.fillStyle = '#64748b'; x.font = '9px sans-serif';
             x.fillText(E.reactantLabel || '反应物', pad, Y(y0) - 4);

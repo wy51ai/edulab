@@ -387,6 +387,7 @@ def assemble_data(spec):
             "language": lang,
             "category": meta.get("category", "junior"),
             "accent": meta.get("accent", "indigo"),
+            "theme": meta.get("theme", "light"),   # "light"(默认) | "dark"
             "engine": engine,
             "equation": eq,
         },

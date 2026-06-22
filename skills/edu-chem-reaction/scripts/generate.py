@@ -286,7 +286,23 @@ REGISTRY = {
 }
 
 
+def _build_data(key, theme=None):
+    data = K.assemble_data(REGISTRY[key]())
+    if theme:                                  # 命令行 --light/--dark 覆盖主题
+        data["meta"]["theme"] = theme
+    return data
+
+
 def main(argv):
+    # 解析主题开关：--light / --dark / --theme=light（不改各反应自身设定，仅本次输出覆盖）
+    argv = list(argv)
+    theme = None
+    for a in list(argv):
+        if a in ("--light", "--dark"):
+            theme = a[2:]; argv.remove(a)
+        elif a.startswith("--theme="):
+            theme = a.split("=", 1)[1]; argv.remove(a)
+
     if not argv or argv[0] == "list":
         print("已注册反应:")
         for k in REGISTRY:
@@ -297,14 +313,14 @@ def main(argv):
         seed = int(argv[1]) if len(argv) > 1 else 0
         out = Path(argv[2]) if len(argv) > 2 else (SKILL_DIR / "output" / "random.html")
         key = random.Random(seed).choice(list(REGISTRY))
-        render_html(K.assemble_data(REGISTRY[key]()), out)
-        print(f"written: {out}  (seed={seed} -> {key})")
+        render_html(_build_data(key, theme), out)
+        print(f"written: {out}  (seed={seed} -> {key}, theme={theme or 'default'})")
         return
     if argv[0] == "all":
         out_dir = Path(argv[1]) if len(argv) > 1 else (SKILL_DIR / "output")
         out_dir.mkdir(parents=True, exist_ok=True)
-        for k, fn in REGISTRY.items():
-            render_html(K.assemble_data(fn()), out_dir / f"{k}.html")
+        for k in REGISTRY:
+            render_html(_build_data(k, theme), out_dir / f"{k}.html")
             print("written:", out_dir / f"{k}.html")
         return
     key = argv[0]
@@ -312,8 +328,8 @@ def main(argv):
         print(f"未知反应 {key}；可用: {', '.join(REGISTRY)}")
         sys.exit(1)
     out = Path(argv[1]) if len(argv) > 1 else (SKILL_DIR / "output" / f"{key}.html")
-    render_html(K.assemble_data(REGISTRY[key]()), out)
-    print("written:", out)
+    render_html(_build_data(key, theme), out)
+    print(f"written: {out}  (theme={theme or 'default'})")
 
 
 if __name__ == "__main__":

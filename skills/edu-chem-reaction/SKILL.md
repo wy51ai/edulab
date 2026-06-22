@@ -104,6 +104,10 @@ python3 <技能目录>/scripts/generate.py list
 `flame`（燃烧/强放热）、`catalyst`（催化剂质子+开关）、`transitionGlow`（过渡态能量光）、
 `electrons`（氧化还原电子转移）、`energy`（能量-反应进程曲线）、原子守恒计数器（默认开）。
 
+**主题**：`meta.theme` 取 `light`（默认）或 `dark`；命令行 `--light`/`--dark` 可临时覆盖
+（如 `generate.py combustion_ch4 out.html --dark`）。亮色为教科书球棍图风（原子带深色描边 + 柔和投影），
+暗色发光叠加（火焰/质子/电子）更醒目——按场景选。
+
 ## 扩展
 - **加反应**：在 `generate.py` 加一个 `build_*`（高层 `species+atom_map`，或低层 `atoms+fragments`），
   注册进 `REGISTRY`。
