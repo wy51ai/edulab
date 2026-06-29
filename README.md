@@ -92,6 +92,44 @@ python3 lib/analytic_kernel.py                            # kernel built-in self
 
 > Like above, no output path → writes to the **current working directory (cwd)**.
 
+## Skill: edu-chem-reaction
+
+![edu-chem-reaction demo](edu-chem-reaction.gif)
+
+Turns one chemical reaction into a self-contained **microscopic 3D demonstration** page: an interactive Three.js molecular animation (drag the slider to watch bonds break / form and atoms recombine, with step highlighting) next to the KaTeX equation, step-by-step narration, an atom-conservation counter, and an optional energy–reaction-coordinate curve. Same three entry points (text / image / random).
+
+**Two engines, auto-selected** — one renderer with two per-frame position resolvers, sharing the bond-diff drawing, labels, overlays and UI:
+
+| Engine | For | Emphasizes |
+|---|---|---|
+| morph | combustion, combination / decomposition / displacement, redox | atoms fly to new partners — atom conservation & recombination |
+| mechanism | organic mechanisms (esterification…) with catalyst · transition state · leaving groups | rigid fragments move through keyframes — the mechanism |
+
+**sympy-driven correctness**: auto-balances the equation (integer coefficients from the matrix null space), validates the atom map (a bijection between reactant and product atoms) and conservation, and derives which bonds break / form from the before↔after difference — equation, geometry and counters all share one source.
+
+**Hybrid geometry**: a built-in VSEPR molecule library by default; if RDKit is installed it can build conformers from SMILES (never installs it automatically).
+
+**Reactions covered**: methane / hydrogen combustion, water electrolysis, Na + Cl₂ redox (with an electron-transfer overlay), glucose aerobic oxidation, and the esterification mechanism — spanning junior-high basics, senior inorganic redox, and organic mechanisms.
+
+**Trigger words**: chemistry reaction, microscopic / molecular animation, combustion, electrolysis, redox electron transfer, esterification mechanism, bond breaking and forming, atom conservation, balance equation, interactive chemistry reaction page; 化学反应、微观演示、分子动画、燃烧、电解水、氧化还原、电子转移、酯化反应、断键成键、原子守恒、化学方程式配平 etc.
+
+### Dependency
+
+The compute core `lib/reaction_kernel.py` depends on **sympy** (same as above). **RDKit is optional** — used only if already installed, never installed automatically.
+
+### Generate from the command line (without Claude)
+
+```bash
+cd skills/edu-chem-reaction
+python3 scripts/generate.py list                            # list registered reactions
+python3 scripts/generate.py combustion_ch4 ./reaction.html  # methane combustion (morph · flame)
+python3 scripts/generate.py esterification ./reaction.html  # esterification (mechanism · catalyst)
+python3 scripts/generate.py random 7 ./random.html          # random reaction (seed=7)
+python3 lib/reaction_kernel.py                              # kernel built-in self-check
+```
+
+> Like above, no output path → writes to the **current working directory (cwd)**.
+
 ## How it works
 
 1. **Get a problem spec** — normalize all three entry points into a structured description (body type and dimensions, given conditions, the quantity asked, language).
@@ -118,12 +156,21 @@ edulab/
     │   ├── scripts/generate.py
     │   ├── output/
     │   └── references/          # problem-schema.md · conventions.md
-    └── edu-analytic-geometry/   # analytic geometry / conics — 2D (Canvas) + KaTeX
+    ├── edu-analytic-geometry/   # analytic geometry / conics — 2D (Canvas) + KaTeX
+    │   ├── SKILL.md
+    │   ├── template/board.html  # data-driven template (generic 2D renderer + param engine)
+    │   ├── lib/
+    │   │   ├── analytic_kernel.py  # sympy exact-solver core (system · Vieta · range · fixed value)
+    │   │   └── conics.py           # conic-section definition library
+    │   ├── scripts/generate.py
+    │   ├── output/
+    │   └── references/          # problem-schema.md · conventions.md
+    └── edu-chem-reaction/       # chemistry reactions — 3D (Three.js) + KaTeX
         ├── SKILL.md
-        ├── template/board.html  # data-driven template (generic 2D renderer + param engine)
+        ├── template/reaction.html # data-driven template (unified renderer + dual engine + data island)
         ├── lib/
-        │   ├── analytic_kernel.py  # sympy exact-solver core (system · Vieta · range · fixed value)
-        │   └── conics.py           # conic-section definition library
+        │   ├── reaction_kernel.py  # sympy balancing + conservation/atom-map check + bond-diff + assembly
+        │   └── molecules.py        # VSEPR molecule-geometry library
         ├── scripts/generate.py
         ├── output/
         └── references/          # problem-schema.md · conventions.md
@@ -138,6 +185,10 @@ edulab/
 **edu-analytic-geometry**
 - **Add a problem type**: add a target-quantity function in `analytic_kernel.py` and reuse `range_over_m` / `is_constant_in_m`, then add a `build_*` in `generate.py` (pick an interaction: range bar / fixed value / fixed point / locus trace).
 - **Add a curve**: ellipse / hyperbola / parabola / circle are built in; new curves go in `conics.py` and the `board.html` engine.
+
+**edu-chem-reaction**
+- **Add a reaction**: add a `build_*` in `generate.py` (high-level `species + atom_map`, or low-level `atoms + fragments` for mechanisms) and register it in `REGISTRY`.
+- **Add a molecule / ion**: add an entry in `lib/molecules.py` (VSEPR geometry + display metadata + internal bonds).
 
 ## License
 

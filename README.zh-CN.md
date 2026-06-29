@@ -92,6 +92,44 @@ python3 lib/analytic_kernel.py                            # kernel 内置自检
 
 > 同上，不传输出路径时默认写到**当前工作目录（cwd）**。
 
+## 技能：edu-chem-reaction
+
+![edu-chem-reaction 演示](edu-chem-reaction.gif)
+
+把一个化学反应做成自包含的**微观 3D 演示**网页：一侧是可交互的 Three.js 分子动画（拖滑块看化学键断裂 / 生成、原子重新组合，分步高亮），另一侧是 KaTeX 反应方程 + 分步讲解 + 原子守恒计数 + 可选能量-反应进程曲线。三入口与上面一致（文字 / 图片 / 随机）。
+
+**双引擎自动选择** —— 一套渲染器、两种逐帧定位，共用键差绘制、标签、叠加层与 UI：
+
+| 引擎 | 适用 | 强调 |
+|---|---|---|
+| morph | 燃烧、化合 / 分解 / 置换、氧化还原 | 原子各自飞向新搭档——原子守恒与重组 |
+| mechanism | 有机机理（酯化…），含催化剂 · 过渡态 · 离去基团 | 分子片段按关键帧刚体位移——反应机理 |
+
+**sympy 驱动的正确性**：自动配平方程（由元素矩阵零空间求整数计量数）、校验原子映射（反应物↔产物原子的双射）与守恒，并由反应前后键的差集推导哪根键断 / 成——方程、几何、计数器同源一致。
+
+**混合几何**：默认用自建 VSEPR 分子库；若环境装有 RDKit 则可由 SMILES 生成构象（绝不自动安装）。
+
+**覆盖反应**：甲烷 / 氢气燃烧、电解水、钠与氯气氧化还原（含电子转移叠加层）、葡萄糖有氧氧化、酯化机理——涵盖初中基础、高中无机氧化还原与有机机理。
+
+**触发词**：化学反应、微观演示、分子动画、燃烧、电解水、氧化还原、电子转移、酯化反应、断键成键、原子守恒、化学方程式配平；chemistry reaction, microscopic/molecular animation, combustion, electrolysis, redox electron transfer, esterification mechanism, atom conservation, interactive chemistry reaction page 等。
+
+### 依赖
+
+计算核心 `lib/reaction_kernel.py` 依赖 **sympy**（同上）。**RDKit 为可选项**——装了才用，绝不自动安装。
+
+### 命令行直接生成（不经过 Claude）
+
+```bash
+cd skills/edu-chem-reaction
+python3 scripts/generate.py list                            # 列出已注册反应
+python3 scripts/generate.py combustion_ch4 ./reaction.html  # 甲烷燃烧（morph · 火焰）
+python3 scripts/generate.py esterification ./reaction.html  # 酯化反应（mechanism · 催化剂）
+python3 scripts/generate.py random 7 ./random.html          # 随机出题（seed=7）
+python3 lib/reaction_kernel.py                              # kernel 内置自检
+```
+
+> 同上，不传输出路径时默认写到**当前工作目录（cwd）**。
+
 ## 工作原理
 
 1. **得到 problem spec** —— 三入口归一成结构化描述（几何体类型与尺寸、已知条件、所求、语言）。
@@ -118,12 +156,21 @@ edulab/
     │   ├── scripts/generate.py
     │   ├── output/
     │   └── references/          # problem-schema.md · conventions.md
-    └── edu-analytic-geometry/   # 解析几何 / 圆锥曲线 — 2D（Canvas）+ KaTeX
+    ├── edu-analytic-geometry/   # 解析几何 / 圆锥曲线 — 2D（Canvas）+ KaTeX
+    │   ├── SKILL.md
+    │   ├── template/board.html  # 数据驱动模板（通用 2D 渲染器 + 参数引擎）
+    │   ├── lib/
+    │   │   ├── analytic_kernel.py  # sympy 精确求解核心（联立·韦达·范围·定值）
+    │   │   └── conics.py           # 圆锥曲线定义库
+    │   ├── scripts/generate.py
+    │   ├── output/
+    │   └── references/          # problem-schema.md · conventions.md
+    └── edu-chem-reaction/       # 化学反应 — 3D（Three.js）+ KaTeX
         ├── SKILL.md
-        ├── template/board.html  # 数据驱动模板（通用 2D 渲染器 + 参数引擎）
+        ├── template/reaction.html # 数据驱动模板（统一渲染器 + 双引擎 + 数据岛）
         ├── lib/
-        │   ├── analytic_kernel.py  # sympy 精确求解核心（联立·韦达·范围·定值）
-        │   └── conics.py           # 圆锥曲线定义库
+        │   ├── reaction_kernel.py  # sympy 配平 + 守恒/原子映射校验 + 键差 + 装配
+        │   └── molecules.py        # VSEPR 分子几何库
         ├── scripts/generate.py
         ├── output/
         └── references/          # problem-schema.md · conventions.md
@@ -138,6 +185,10 @@ edulab/
 **edu-analytic-geometry**
 - **加题型**：在 `analytic_kernel.py` 加目标量函数并复用 `range_over_m` / `is_constant_in_m`，在 `generate.py` 加一个 `build_*`（选交互范式：范围条 / 定值 / 定点 / 轨迹 trace）。
 - **加曲线**：椭圆 / 双曲线 / 抛物线 / 圆已内置；新曲线在 `conics.py` 与 `board.html` 引擎各加一份。
+
+**edu-chem-reaction**
+- **加反应**：在 `generate.py` 加一个 `build_*`（高层 `species + atom_map`，或低层 `atoms + fragments` 用于机理），注册进 `REGISTRY`。
+- **加分子 / 离子**：在 `lib/molecules.py` 加一项（VSEPR 几何 + 显示元数据 + 内部键）。
 
 ## License
 
