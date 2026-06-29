@@ -18,6 +18,8 @@ To update to the latest version later:
 npx skills update
 ```
 
+> **Note:** `npx skills update` only refreshes skills you've **already** installed — it does **not** pull in skills newly added to the repo. When this repo gains a new skill (e.g. a new `edu-*`), run `npx skills add wy51ai/edulab` again to install it.
+
 Or use it as a Claude Code plugin marketplace:
 
 ```

@@ -18,6 +18,8 @@ npx skills add wy51ai/edulab
 npx skills update
 ```
 
+> **注意**：`npx skills update` 只会把**已安装**的技能刷新到最新版，**不会**自动拉取仓库新增的技能。当本仓库新增了技能（如新的 `edu-*`）时，再次运行 `npx skills add wy51ai/edulab` 即可装上。
+
 或作为 Claude Code 插件市场使用：
 
 ```
