@@ -326,6 +326,7 @@ UI_ZH = {
     "drag": "拖拽旋转 · 滚轮缩放 · 右键平移",
     "legend": "原子图例", "conservation": "原子守恒", "energy": "能量·反应进程",
     "broken": "断裂的键", "formed": "新生成的键",
+    "labels": "标签", "labelsHint": "显示 / 隐藏分子标签",
 }
 UI_EN = {
     "reactants": "Reactants", "products": "Products", "progress": "Reaction progress",
@@ -335,6 +336,7 @@ UI_EN = {
     "drag": "Drag to rotate · scroll to zoom · right-drag to pan",
     "legend": "Atom legend", "conservation": "Atom conservation", "energy": "Energy · progress",
     "broken": "Bonds broken", "formed": "Bonds formed",
+    "labels": "Labels", "labelsHint": "Show / hide molecule labels",
 }
 
 

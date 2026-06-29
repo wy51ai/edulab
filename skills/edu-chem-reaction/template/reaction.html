@@ -33,6 +33,12 @@
             <div id="labels-overlay" class="absolute inset-0 pointer-events-none z-20 overflow-hidden"></div>
             <div id="canvas-container" class="flex-1 w-full h-full cursor-grab active:cursor-grabbing"></div>
 
+            <!-- Labels show / hide toggle -->
+            <button id="labels-toggle" class="absolute top-4 left-4 z-30 bg-white/85 border border-slate-200 backdrop-blur text-xs pl-2.5 pr-3 py-1.5 rounded-lg text-slate-600 shadow-sm hover:bg-white transition-colors flex items-center gap-1.5 cursor-pointer select-none" title="显示 / 隐藏标签">
+                <svg id="labels-toggle-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span id="labels-toggle-text">标签</span>
+            </button>
+
             <!-- Energy diagram (optional) -->
             <div id="energy-panel" class="absolute top-4 right-4 hidden bg-white/85 border border-slate-200 backdrop-blur rounded-xl p-3 select-none shadow-sm">
                 <div class="text-[10px] font-bold text-slate-500 tracking-wider uppercase mb-1" id="energy-title">能量·反应进程</div>
@@ -179,7 +185,7 @@
         // ---- State ----
         let scene, camera, renderer, controls;
         let progress = 0, isPlaying = false, playRAF = null, slideRAF = null;
-        let showFlame = true, showCatalyst = true;
+        let showFlame = true, showCatalyst = true, showLabels = true;
         const container = document.getElementById('canvas-container');
         const atoms = {};       // id -> {el, mesh, start, end, cur, frag, flocal}
         const fragments = {};    // id -> {catalyst, K0,K1,K2, curPos, curRot, sprite, light}
@@ -255,7 +261,7 @@
                 const outline = new THREE.Mesh(sphereGeom(a.radius), OUTLINE_MAT);
                 outline.scale.setScalar(1.07); mesh.add(outline);
                 atoms[a.id] = {
-                    el: a.el, mesh,
+                    el: a.el, mesh, radius: a.radius,
                     start: new THREE.Vector3().fromArray(a.start),
                     end: new THREE.Vector3().fromArray(a.end),
                     cur: new THREE.Vector3().fromArray(a.start),
@@ -447,8 +453,7 @@
         }
 
         // ===== Labels =====
-        const _v = new THREE.Vector3();
-        function centroid(ids) { _v.set(0, 0, 0); ids.forEach(id => _v.add(atoms[id].cur)); return _v.clone().divideScalar(ids.length); }
+        const _v = new THREE.Vector3(), _camUp = new THREE.Vector3();
         function buildLabels() {
             const overlay = document.getElementById('labels-overlay');
             (DATA.labels || []).forEach(l => {
@@ -465,15 +470,26 @@
         function updateLabels(p) {
             const rect = container.getBoundingClientRect();
             const reactantPhase = p < 0.55;
+            _camUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
             (DATA.labels || []).forEach(l => {
-                const show = l.phase === 'reactant' ? reactantPhase : !reactantPhase;
+                const show = showLabels && (l.phase === 'reactant' ? reactantPhase : !reactantPhase);
                 const el = l._el;
                 if (!show) { el.style.opacity = '0'; return; }
-                const c = centroid(l._ids); _v.copy(c).project(camera);
-                if (_v.z > 1) { el.style.opacity = '0'; return; }
+                // Anchor above the molecule's topmost atom so the box never covers the bonds.
+                let sx = 0, topY = Infinity, n = 0;
+                for (const id of l._ids) {
+                    const a = atoms[id];
+                    _v.copy(a.cur).project(camera);
+                    if (_v.z > 1) continue;
+                    sx += (_v.x * 0.5 + 0.5) * rect.width;
+                    _v.copy(a.cur).addScaledVector(_camUp, a.radius).project(camera);
+                    topY = Math.min(topY, (_v.y * -0.5 + 0.5) * rect.height);
+                    n++;
+                }
+                if (!n) { el.style.opacity = '0'; return; }
                 el.style.opacity = '1';
-                el.style.left = ((_v.x * 0.5 + 0.5) * rect.width) + 'px';
-                el.style.top = ((_v.y * -0.5 + 0.5) * rect.height) + 'px';
+                el.style.left = (sx / n) + 'px';
+                el.style.top = (topY - 6) + 'px';
             });
         }
 
@@ -622,6 +638,8 @@
             document.getElementById('play-text').textContent = UI.play || '自动演示';
             document.getElementById('legend-label').textContent = UI.legend || '原子图例';
             document.getElementById('conservation-label').textContent = UI.conservation || '原子守恒';
+            document.getElementById('labels-toggle-text').textContent = UI.labels || '标签';
+            document.getElementById('labels-toggle').title = UI.labelsHint || '显示 / 隐藏标签';
             // conservation chips
             const chips = document.getElementById('conservation-chips');
             const colorOf = {}; (DATA.legend || []).forEach(l => colorOf[l.el] = l.color);
@@ -672,6 +690,15 @@
             if (ft) ft.addEventListener('change', e => showFlame = e.target.checked);
             const ct = document.getElementById('catalyst-toggle');
             if (ct) ct.addEventListener('change', e => showCatalyst = e.target.checked);
+            const EYE = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>`;
+            const EYE_OFF = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>`;
+            const lt = document.getElementById('labels-toggle'), lti = document.getElementById('labels-toggle-icon');
+            lt.addEventListener('click', () => {
+                showLabels = !showLabels;
+                lti.innerHTML = showLabels ? EYE : EYE_OFF;
+                lt.classList.toggle('text-slate-400', !showLabels);
+                lt.classList.toggle('text-slate-600', showLabels);
+            });
         }
 
         window.onload = function () {
