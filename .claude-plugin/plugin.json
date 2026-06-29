@@ -1,6 +1,6 @@
 {
   "name": "edulab",
-  "version": "0.1.0",
+  "version": "0.1.7",
   "description": "教育类技能集合：把学科问题转成可交互的教学网页。edu-solid-geometry 立体几何解题（建系+向量法，3D Three.js + MathJax）；edu-analytic-geometry 解析几何/圆锥曲线解题（sympy 精确计算 + 实时交互 2D 画板 + KaTeX）；edu-chem-reaction 化学反应微观 3D 演示（sympy 自动配平 + 原子守恒，morph/mechanism 双引擎，Three.js + KaTeX）。",
   "author": {
     "name": "WY"
