@@ -202,10 +202,10 @@ WY · [@akokoi1](https://x.com/akokoi1)
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=wy51ai%2Fedulab&type=date&legend=top-left">
+<a href="https://star-history.dera.page/#wy51ai/edulab&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=wy51ai/edulab&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=wy51ai/edulab&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=wy51ai/edulab&type=date&legend=top-left" />
  </picture>
 </a>
