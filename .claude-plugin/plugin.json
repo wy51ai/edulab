@@ -1,7 +1,7 @@
 {
   "name": "edulab",
-  "version": "0.1.8",
-  "description": "教育类技能集合：把学科问题转成可交互的教学网页与讲解视频。edu-solid-geometry 立体几何解题（建系+向量法，3D Three.js + MathJax）；edu-analytic-geometry 解析几何/圆锥曲线解题（sympy 精确计算 + 实时交互 2D 画板 + KaTeX）；edu-chem-reaction 化学反应微观 3D 演示（sympy 自动配平 + 原子守恒，morph/mechanism 双引擎，Three.js + KaTeX）；edu-math-video 数学题讲解视频（GLM-TTS 中文配音 + 中英双语字幕 + 手绘动画，渲染成 MP4）。",
+  "version": "0.3.1",
+  "description": "教育类技能集合：立体几何、解析几何与化学反应交互教学网页；edu-math-video 数学与生物机制讲解视频，支持可复用 Canvas 细胞模型、中文配音、中英字幕和 MP4 导出。",
   "author": {
     "name": "WY"
   }

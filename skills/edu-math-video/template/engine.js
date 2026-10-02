@@ -572,9 +572,9 @@ const SUPS = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶'
 const plain = s => s.replace(/_(\d)/g, (_, d) => SUBS[d]).replace(/\^([0-9+\-n]+)/g, (_, g) => [...g].map(c => SUPS[c]).join(''));
 function subtitles(t) {
   let cur = null;
-  for (const sc of TL.scenes) for (const ln of sc.lines) if (t >= ln.start - 0.05 && t < ln.end + 0.3) cur = ln;
+  for (const sc of TL.scenes) for (const ln of sc.lines) if (t >= ln.start - 0.05 && t < (ln.hold_end ?? ln.end) + 0.3) cur = ln;
   if (!cur) return;
-  const a = clamp((t - cur.start + 0.05) / 0.15) * clamp((cur.end + 0.3 - t) / 0.15);
+  const a = clamp((t - cur.start + 0.05) / 0.15) * clamp(((cur.hold_end ?? cur.end) + 0.3 - t) / 0.15);
   const zf = `600 44px ${SUB}`, ef = `30px ${EN}`;
   const zl = wrap(plain(cur.zh), zf, 1640), el = wrap(plain(cur.en), ef, 1640);
   ctx.font = zf; let w = Math.max(...zl.map(s => ctx.measureText(s).width));

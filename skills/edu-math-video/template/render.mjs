@@ -7,21 +7,46 @@
 //                                             never has sustained motion (see reference/visual-design.md)
 //   node render.mjs video [workers]        -> ../<output_name>.mp4   (workers = parallel browser pages, NOT fps;
 //                                             fps is fixed at 30. 4-8 is sensible.)
+//   node render.mjs video 4 --fresh --preset medium  -> force a rebuild with legacy compression
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import ffmpeg from 'ffmpeg-static';
+import { measureMotion } from './motion_measure.mjs';
+import { resolveMotionRegions } from './motion_regions.mjs';
+import { videoOptions } from './render_options.mjs';
+import { inputKey, cacheHit, saveCache } from './render_cache.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const BUILD = path.join(ROOT, 'build');
+const CONFIG = JSON.parse(fs.readFileSync(path.join(ROOT, 'episode.json'), 'utf8'));
+const { figure: FIG, board: BOARD } = resolveMotionRegions(CONFIG);
+const mode = process.argv[2] || 'stills';
+if (!['stills','motion','video'].includes(mode)) throw new Error('Unknown rendering mode: '+mode);
+const OPTIONS = mode === 'video' ? videoOptions(process.argv.slice(3)) : null;
 const TL = JSON.parse(fs.readFileSync(path.join(BUILD, 'timeline.json'), 'utf8'));
 fs.writeFileSync(path.join(BUILD, 'timeline.js'), 'window.TIMELINE=' + JSON.stringify(TL) + ';');
 const URL_ = pathToFileURL(path.join(ROOT, 'index.html')).href + '?render=1';
 const FPS = 30;
-const CONFIG = JSON.parse(fs.readFileSync(path.join(ROOT, 'episode.json'), 'utf8'));
+const FFMPEG = process.env.FFMPEG_BINARY || ffmpeg;
 const OUT = path.join(ROOT, '..', CONFIG.output_name + '.mp4');
+if (mode === 'video' && TL.preview_only) throw new Error('Preview-only timeline: generate real audio before exporting video.');
+const CACHE = path.join(BUILD,'render-cache.json');
+const CACHE_SETTINGS = mode === 'video' ? {
+  workers:OPTIONS.workers,preset:OPTIONS.preset,fps:FPS,crf:18,jpeg:.93,width:1920,height:1080,
+  ffmpeg:FFMPEG,ffmpegSize:fs.statSync(FFMPEG).size,ffmpegModified:fs.statSync(FFMPEG).mtimeMs
+} : null;
+let KEY = null;
+if (OPTIONS) {
+  try { KEY = inputKey(ROOT,CACHE_SETTINGS,OUT); }
+  catch (error) { console.warn('Render cache disabled: input scan failed:',error.message); }
+}
+if (OPTIONS && KEY !== null && !OPTIONS.fresh && cacheHit(CACHE,KEY,OUT)) {
+  console.log('CACHE HIT: unchanged local inputs; reused verified output',OUT);
+  process.exit(0);
+}
 let ERRORS = 0;  // JS errors in anim.js/engine.js: a frame with an error is silently incomplete
 
 async function openPage(browser) {
@@ -32,11 +57,13 @@ async function openPage(browser) {
   await page.evaluate(() => window.ready);
   return page;
 }
-const canvasShot = page => page.locator('#c').screenshot({ type: 'jpeg', quality: 93 });
+// Export the native canvas pixels directly; locator screenshots wait on browser layout each frame.
+const canvasShot = async page => Buffer.from(await page.evaluate(() =>
+  document.getElementById('c').toDataURL('image/jpeg', .93).split(',')[1]), 'base64');
 
 function run(args) {
   return new Promise((res, rej) => {
-    const p = spawn(ffmpeg, args, { stdio: ['pipe', 'inherit', 'inherit'] });
+    const p = spawn(FFMPEG, args, { stdio: ['pipe', 'inherit', 'inherit'] });
     p.on('close', c => (c === 0 ? res() : rej(new Error('ffmpeg ' + c))));
     p.on('error', rej);
   });
@@ -44,8 +71,8 @@ function run(args) {
 
 async function renderChunk(browser, f0, f1, file, id) {
   const page = await openPage(browser);
-  const ff = spawn(ffmpeg, ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
-    '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p', '-r', String(FPS), file], { stdio: ['pipe', 'inherit', 'inherit'] });
+  const ff = spawn(FFMPEG, ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
+    '-c:v', 'libx264', '-preset', OPTIONS.preset, '-crf', '18', '-pix_fmt', 'yuv420p', '-r', String(FPS), file], { stdio: ['pipe', 'inherit', 'inherit'] });
   const done = new Promise((res, rej) => ff.on('close', c => (c === 0 ? res() : rej(new Error('ffmpeg chunk ' + c)))));
   const t0 = Date.now();
   for (let f = f0; f < f1; f++) {
@@ -59,8 +86,6 @@ async function renderChunk(browser, f0, f1, file, id) {
   await page.close();
 }
 
-const mode = process.argv[2] || 'stills';
-if (mode === 'video' && TL.preview_only) throw new Error('Preview-only timeline: generate real audio before exporting video.');
 // file access flags: lets `motion` read pixels of a canvas that has problem.png drawn on it (file:// taints it otherwise)
 const ARGS = ['--font-render-hinting=none', '--allow-file-access-from-files', '--disable-web-security'];
 let browser;
@@ -72,17 +97,6 @@ try {
 if (mode === 'motion') {
   const page = await openPage(browser);
   await page.evaluate(() => { window.NO_BOIL = true; });  // freeze the hand-drawn wobble so only real changes count
-  const FIG = [0, 110, 925, 770], BOARD = [925, 110, 995, 770];  // x, y, w, h (everything above the subtitles)
-  const grab = t => page.evaluate(([t, regs]) => {
-    window.renderFrame(t);
-    const c = document.getElementById('c').getContext('2d');
-    return regs.map(([x, y, w, h]) => {
-      const d = c.getImageData(x, y, w, h).data, out = [];
-      for (let j = 0; j < h; j += 3) for (let i = 0; i < w; i += 3) { const k = (j * w + i) * 4; out.push((d[k] + d[k + 1] + d[k + 2]) / 3); }
-      return out;
-    });
-  }, [t, [FIG, BOARD]]);
-  const diff = (a, b) => { let n = 0; for (let i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > 24) n++; return 100 * n / a.length; };  // 24 grey levels: a translucent highlighter over paper still counts
   const exempt = new Set(CONFIG.static_ok || []);
   const first = TL.scenes[0].id, last = TL.scenes[TL.scenes.length - 1].id;
   const rows = [], problems = [];
@@ -90,10 +104,10 @@ if (mode === 'motion') {
     const skip = sc.id === first || sc.id === last || exempt.has(sc.id);
     let moving = 0;
     for (const [k, ln] of sc.lines.entries()) {
-      const N = 6, a = ln.start + 0.05, b = Math.max(a + 0.1, ln.end - 0.05), shots = [];
-      for (let i = 0; i < N; i++) shots.push(await grab(a + (b - a) * i / (N - 1)));
-      const steps = shots.slice(1).map((s, i) => diff(shots[i][0], s[0]));
-      const net = diff(shots[0][0], shots[N - 1][0]), board = diff(shots[0][1], shots[N - 1][1]);
+      // Sample only speech time; a deliberate thinking pause is allowed to hold still.
+      const N = 6, a = ln.start + 0.05, b = Math.max(a + 0.1, ln.end - 0.05);
+      const times = Array.from({ length: N }, (_, i) => a + (b - a) * i / (N - 1));
+      const { steps, net, board } = await page.evaluate(measureMotion, { times, regions: [FIG, BOARD] });
       const active = steps.filter(v => v > 0.1).length;
       const kind = Math.max(net, ...steps) < 0.15 ? 'STATIC' : active >= 3 ? 'MOVE' : 'POP';
       if (kind === 'MOVE') moving++;
@@ -126,7 +140,8 @@ if (mode === 'motion') {
     console.log(f);
   }
 } else {
-  const workers = Number(process.argv[3] || 6);
+  const workers = OPTIONS.workers;
+  console.log(`Video: ${workers} workers, ${OPTIONS.preset} preset, 1080p30, CRF18`);
   const total = Math.ceil(TL.duration * FPS);
   const per = Math.ceil(total / workers);
   const chunks = [];
@@ -138,12 +153,19 @@ if (mode === 'motion') {
   await Promise.all(chunks.map(c => renderChunk(browser, c.f0, c.f1, c.file, c.id)));
   console.log('frames done in', ((Date.now() - t0) / 1000).toFixed(0), 's');
   const list = path.join(BUILD, 'chunks.txt');
-  fs.writeFileSync(list, chunks.map(c => `file '${c.file}'`).join('\n'));
+  // FFmpeg concat syntax uses backslash as an escape, including on Windows.
+  fs.writeFileSync(list, chunks.map(c => `file '${c.file.replace(/\\/g, '/').replace(/'/g, "'\\''")}'`).join('\n'));
   await run(['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list, '-i', path.join(BUILD, 'mix.wav'),
     '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11', '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart',
     '-metadata', 'title=' + CONFIG.title, OUT]);
   for (const c of chunks) fs.rmSync(c.file, { force: true });  // intermediate chunks are no longer needed
   fs.rmSync(list, { force: true });
+  if (!ERRORS && KEY !== null) {
+    try {
+      if (inputKey(ROOT,CACHE_SETTINGS,OUT) === KEY) saveCache(CACHE,KEY,OUT);
+      else console.warn('Render inputs changed during export; output was not cached. Rebuild before delivery.');
+    } catch (error) { console.warn('Video exported, but its cache could not be saved:',error.message); }
+  }
   console.log('WROTE', OUT);
 }
 await browser.close();

@@ -119,20 +119,23 @@ SC.figure = (lt, S) => {
 // 03: the key fact, SHOWN: CD swings onto DA and DB (all equal -> a circle), then the rectangle explains why
 SC.key = (lt, S) => {
   const { P, at } = S;
-  fig({ len: 1, right: 1, D: 1, CD: 1, circle: eio(P(at(0, 0.7), 1.2)), E: P(at(1, 0.2), 1.0), rect: P(at(1, 0.65), 0.8),
-    glow: { CD: bump(lt, at(0), 1.0) + bump(lt, at(2, 0.6)), AB: bump(lt, at(2, 0.1), 1.6), CE: bump(lt, at(2, 0.1), 1.6) } });
-  slideSeg(Cp, Dp, Dp, Ap, eio(P(at(0, 0.2), 0.9)), { c: C.red });     // copy of CD lands on DA
-  slideSeg(Cp, Dp, Dp, Bp, eio(P(at(0, 0.45), 0.9)), { c: C.red });    // ... and on DB
-  if (lt < at(2, 0.9)) slideSeg(Cp, Dp, Dp, Ep, eio(P(at(1, 0.35), 0.9)), { c: C.green, a: 0.7 });  // DE = CD
-  slideSeg(Cp, Ep, Ap, Bp, eio(P(at(2, 0.25), 1.2)) * (1 - P(at(2, 0.85), 0.4)), { c: C.green, w: 6 });  // diagonal CE -> AB
+  fig({ len: 1, right: eio(P(at(0, 0.1), Math.max(0.8, S.dur(0) * 0.55))), D: 1, CD: 1, circle: eio(P(at(1, 0.7), 1.2)), E: P(at(2, 0.2), 1.0), rect: P(at(3, 0.35), 0.8),
+    glow: { CD: bump(lt, at(1), 1.0) + bump(lt, at(4, 0.6)), AB: bump(lt, at(4, 0.1), 1.6), CE: bump(lt, at(4, 0.1), 1.6) } });
+  slideSeg(Cp, Dp, Dp, Ap, eio(P(at(1, 0.2), 0.9)), { c: C.red });     // copy of CD lands on DA
+  slideSeg(Cp, Dp, Dp, Bp, eio(P(at(1, 0.45), 0.9)), { c: C.red });    // ... and on DB
+  if (lt < at(4, 0.9)) slideSeg(Cp, Dp, Dp, Ep, eio(P(at(2, 0.35), 0.9)), { c: C.green, a: 0.7 });  // DE = CD
+  slideSeg(Cp, Ep, Ap, Bp, eio(P(at(4, 0.25), 1.2)) * (1 - P(at(4, 0.85), 0.4)), { c: C.green, w: 6 });  // diagonal CE -> AB
+  // Check the midpoint condition by sliding a copy of AD onto DB before stating the theorem.
+  if (lt < at(1)) slideSeg(Ap, Dp, Dp, Bp, eio(P(at(0, 0.25), Math.max(1, S.dur(0) * 0.55))), { c: C.red, w: 6 });
   board(1);
-  bl(0, '关键结论 Key fact:', 0, lt, { c: C.gray, size: 32 });
-  bl(1, '直角三角形斜边上的中线', at(0, 0.1), lt, { c: C.red });
-  bl(2, '= 斜边的一半', at(0, 0.5), lt, { c: C.red, size: 46 });
-  bl(4, '延长 CD 到 E，使 DE = CD', at(1, 0.2), lt, { c: C.green });
-  bl(5, '⇒ 四边形 ACBE 是矩形', at(1, 0.7), lt, { c: C.green });
-  bl(6, '矩形对角线相等且互相平分', at(2, 0.1), lt);
-  bl(7, '⇒ CD = ½ CE = ½ AB', at(2, 0.6), lt, { size: 44 });
+  bl(0, '条件 Conditions:', 0, lt, { c: C.gray, size: 32 });
+  bl(1, '∠C = 90°（已知）', at(0, 0.1), lt);
+  bl(2, 'AD = DB（D 是中点）', at(0, 0.5), lt, { c: C.red });
+  bl(3, 'CD = ½ AB', at(1, 0.3), lt, { c: C.red, size: 44 });
+  bl(4, '延长 CD：DE = CD', at(2, 0.3), lt, { c: C.green });
+  bl(5, '对角线互相平分 ⇒ 平行四边形', at(3, 0.15), lt, { c: C.green, size: 30 });
+  bl(6, '∠C = 90° ⇒ 矩形', at(3, 0.6), lt);
+  bl(7, 'CE = AB ⇒ CD = ½ AB', at(4, 0.6), lt, { size: 42 });
 };
 
 // 04: the computation; the figure keeps pointing at the quantity being computed
@@ -178,8 +181,8 @@ SC.outro = (lt, S) => {
   });
   grp(P(at(1), 0.5), () => {
     puff(760, 560, 1.3 * back(P(at(1, 0.05), 0.6)), { wave: true });
-    bubble(1080, 420, '答案：CD = 2.5', P(at(1, 0.2), 0.5), { size: 50, c: C.red });
-    txt('斜边中线 = 斜边一半', 960, 160, { size: 72, pop: P(at(1, 0.4), 0.6) });
+    bubble(1080, 420, lt < at(2) ? '答案：CD = 2.5' : '迁移：CD = 5', P(at(1, 0.2), 0.5), { size: 50, c: C.red });
+    txt(lt < at(2) ? '斜边中线 = 斜边一半' : 'AB = 10 ⇒ CD = 5', 960, 160, { size: 72, pop: P(at(1, 0.4), 0.6) });
     txt('See you next problem!', 960, 238, { size: 40, f: EN, c: C.blue, pop: P(at(1, 0.6), 0.6) });
   });
 };

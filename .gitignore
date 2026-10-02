@@ -12,6 +12,7 @@ output/
 .vscode/
 *.log
 *.tmp
+skills/edu-math-video/template/build/
 
 # Python
 __pycache__/

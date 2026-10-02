@@ -85,3 +85,24 @@ cd PROJ && PY build_audio.py --say "你好，我们来看一道数学题。"
 ## 换音色 / 语速
 
 改 `.env` 的 `GLM_VOICE` 或 `GLM_SPEED`，重跑 `PY build_audio.py`。缓存文件名包含音色和语速，所以会全部重新合成（会产生费用，先告诉用户）。
+
+## Windows 免费离线配音
+
+Windows 已安装中文**桌面语音**时（如 Microsoft Yaoyao/Huihui），无 GLM key 的 `TTS_ENGINE=auto` 优先使用它，语音由本机 `System.Speech` 合成。无需 edge-tts 或网络；没有中文桌面语音时到 Windows 设置的“时间和语言 → 语音”安装。可先查看列表：
+
+```powershell
+python -c "import sys; sys.path.insert(0, 'PROJ'); import windows_tts; print(windows_tts.list_voices())"
+$env:TTS_ENGINE = 'windows'
+$env:WINDOWS_VOICE = 'Microsoft Yaoyao Desktop' # 按列表中的完整名称填写；省略时用第一个中文语音
+python PROJ/build_audio.py --say '你好，我们来看一道数学题。'
+```
+
+`GLM_SPEED` 仍控制速度，Windows 映射为系统语速。`TTS_TIMEOUT` 为每次合成的超时秒数，默认 120；Edge 最多尝试三次，每次均有这个上限。不会在合成失败后静默切换到另一服务。GLM/Edge 会将旁白发送给相应服务；Windows/say 均离线。
+
+`ffmpeg-static` 的 Windows `ffmpeg.exe` 会自动发现。也可在环境或 `.env` 中设置 `FFMPEG_BINARY` 为实际文件的绝对路径；渲染器读取的是**进程环境**中的同名变量（不加载 `.env`）。
+
+```powershell
+$env:FFMPEG_BINARY = 'C:/tools/ffmpeg/bin/ffmpeg.exe'
+```
+
+没有 GLM key 时 `--asr` 仍会明确跳过，字母与中文读音需人工试听。`python SKILL/scripts/setup_check.py PROJ` 可在所有平台检查依赖、浏览器和实际配音选择，而不发送旁白。

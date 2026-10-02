@@ -136,9 +136,9 @@ python3 lib/reaction_kernel.py                              # kernel built-in se
 
 ![edu-math-video demo](edu-math-video.png)
 
-Turns one math problem (geometry, algebra, functions, motion problems…) into a **16:9 1920×1080 explainer MP4**: Chinese voice-over (Zhipu **GLM-TTS**), bilingual zh + en subtitles (`.srt` too), and hand-drawn notebook-style canvas animation driven by the narration timeline. Input is a problem screenshot or plain text.
+Turns math problems (geometry, algebra, functions, motion problems…) and supported biology mechanisms into **16:9 1920×1080 explainer MP4s**: Chinese narration, bilingual zh + en subtitles (`.srt` too), and Canvas animation driven by the narration timeline. Use GLM-TTS or a supported fallback, including free offline Windows Chinese speech. Input is a problem screenshot or plain text; the biology example also works as a concept lesson.
 
-**The picture explains the step**: every narration line gets a "point → move → keep" action on the figure (equal segments slide onto each other, congruent triangles overlay, the 3D camera tweens to a top view, a cone unrolls into a sector…) — timed by `S.at(k, f)` (a fraction into line *k*), never by hard-coded seconds. A `motion` check rejects static lines.
+**The picture explains the step**: every narration line gets a "point → move → keep" action on the figure (equal segments slide onto each other, congruent triangles overlay, the 3D camera tweens to a top view, a cone unrolls into a sector…) — timed by `S.at(k, f)` (a fraction into line *k*), never by hard-coded seconds. A `motion` check flags static segments outside exempt scenes.
 
 **Pipeline** (one folder per video, created in the user's current directory):
 
@@ -147,15 +147,15 @@ script.json ──build_audio.py──► timeline.json + mix.wav + <name>.srt  
 anim.js + engine.js ──node render.mjs video──► <name>.mp4              (Playwright + ffmpeg, 30 fps)
 ```
 
-**Guard rails**: the first scene shows the original problem with each condition boxed as it is read; `tts` text must be speakable Chinese (no digits / math symbols); polyphones are pinned (`长[cháng]`, shared `pron.json` lexicon) and `--check` must report 0 before any paid TTS call; a free `--preview` + contact-sheet review comes before real audio; `--asr` transcribes the audio back to catch misread letters.
+**Guard rails**: open with a visible question, then establish the original conditions before using them. `tts` text must be speakable Chinese (no digits / math symbols); polyphones are pinned (`长[cháng]`, shared `pron.json` lexicon) and `--check` must report 0 before any paid TTS call. Review a free `--preview` and contact sheet before real audio. Optional `--asr` uses online recognition and requires authorization to send the narration; offline lessons can skip it and report the verification scope.
 
-**Trigger words**: math explainer video, walkthrough video, problem-solving video, micro-lesson; 讲解视频、解题视频、例题精讲、微课 etc.
+**Trigger words**: math explainer video, biology explainer video, cell animation, walkthrough video, problem-solving video, micro-lesson; 讲解视频、解题视频、例题精讲、生物微课、细胞动画 etc. The skill name remains `edu-math-video`.
 
 ### Dependency
 
 - Python 3 with `numpy requests pypinyin pillow`; Node.js 18+ with `playwright` + `ffmpeg-static` (installed once in the workspace — `scripts/new_video.sh` writes the `package.json`); Google Chrome or Playwright Chromium.
-- A Zhipu **`GLM_API_KEY`** provided by you, in `~/.config/math-problem-video/.env` (see `reference/glm-tts-setup.md`).
-- **No key?** It falls back automatically (`TTS_ENGINE=auto`): [edge-tts](https://github.com/rany2/edge-tts) if installed (free neural voices, needs internet), else macOS `say` (offline, robotic). Force one with `TTS_ENGINE=glm|edge|say`.
+- Optional Zhipu **`GLM_API_KEY`**, provided by you, in `~/.config/math-problem-video/.env` (see `reference/glm-tts-setup.md`).
+- **No key?** It falls back automatically (`TTS_ENGINE=auto`): [edge-tts](https://github.com/rany2/edge-tts) if installed (free neural voices, needs internet), else macOS `say` (offline, robotic). Windows with an installed Chinese desktop voice uses offline system speech before Edge. Force one with `TTS_ENGINE=glm|windows|edge|say`.
 
 ### Run the pipeline by hand (without Claude)
 
@@ -168,7 +168,51 @@ python3 build_audio.py --preview && node render.mjs motion && node render.mjs st
 python3 build_audio.py && node render.mjs video 6                   # real TTS, then render (6 = parallel pages)
 ```
 
+### Video teaching upgrade (0.2.0)
+
+- Optional `pause_after` gives students thinking time and retains the question in the video and SRT.
+- Optional `theorem` records conditions, reasons and a conclusion; `--check` emits a reviewable teaching report. This is a structural check, not mathematical verification.
+- Windows can use free offline Chinese desktop speech. PowerShell scaffolding and cross-platform environment checks are included.
+- Motion measurements stay in the browser; direct canvas capture and linear-time audio smoothing reduce rendering and mixing overhead.
+- The sample now checks theorem conditions and ends with a transfer exercise. Existing scripts keep their original timing.
+
+See [teaching guidance](skills/edu-math-video/reference/teaching-quality.md). Windows: use the full skill path, `SKILL/scripts/new_video.ps1 -Workspace $PWD -Name my_problem`, then `python SKILL/scripts/setup_check.py my_problem`. Keep the user workspace as the working directory.
+
+### Cell mechanism lessons (0.3.0)
+
+![Mitophagy lesson preview](skills/edu-math-video/examples/mitophagy-cell/preview.png)
+
+- A reusable [Canvas cell model](skills/edu-math-video/lib/biology-model.js) keeps the same cell, mitochondrion and lysosome as the camera moves from the whole cell to the local mechanism and back.
+- The approximately one-minute [mitophagy-cell example](skills/edu-math-video/examples/mitophagy-cell/) opens with “How does a cell clear a damaged mitochondrion?”, animates wrapping, closure, fusion and internal degradation, then ends with a transfer question. Each narration line explains one visible change.
+- Optional `episode.motion_regions` measures motion in the actual model area instead of assuming a left-side figure. Optional `music_level` is a number from `0` to `1`, defaults to `1`, and `0` disables background music while retaining narration and configured sound effects. Existing math projects keep their defaults.
+- Review a 45–60 second sample before exporting a full lesson. Scientific diagrams and particle counts are teaching schematics, not experimental measurements; ROS content must not be relabelled as survival rate. The project does not promise views or learning gains.
+
+Create an independent demo project in your lesson workspace (replace the paths):
+
+```bash
+python /path/to/edu-math-video/scripts/create_biology_demo.py --workspace /path/to/lessons --name cell-classroom-demo
+cd /path/to/lessons/cell-classroom-demo
+python build_audio.py --check
+python build_audio.py --preview
+node render.mjs motion
+node render.mjs stills auto
+# Review the images, then generate real narration and export:
+python build_audio.py
+node render.mjs video 6
+```
+
+See the [biology visual standards](skills/edu-math-video/reference/biology-visuals.md) for model differences, mechanism order and the visual/cause-and-effect review checklist. The model is a Canvas teaching cutaway, not a reconstructed specimen or an interactive classroom.
+
+
+### Faster local generation (0.3.1)
+
+Windows offline narration now shares one speech engine across multiple clips and avoids FFmpeg when the clip already has the required PCM format. Identical narration is synthesized once. Video export defaults to x264 `fast` at the existing 1080p, 30 fps and CRF 18 settings, and reuses a completed MP4 when local inputs and the output file still match their content hashes.
+
+On one Windows machine, the same 60-second cell lesson took **93 → 71 seconds for cold narration plus export**; an unchanged repeat export took **0.74 seconds**. These measurements exclude writing the lesson and do not predict every machine's runtime. Use `node render.mjs video 4 --fresh --preset medium` to force a rebuild with the previous compression preset. See [performance details and cache limits](skills/edu-math-video/reference/performance.md), including how to update an existing lesson project.
+
 ## How it works
+
+The interactive web lesson skills use the kernel/template workflow below. Videos use the narration and Canvas pipeline above.
 
 1. **Get a problem spec** — normalize all three entry points into a structured description (body type and dimensions, given conditions, the quantity asked, language).
 2. **Exact kernel computation** — sympy computes exact coordinates, key vectors, normals, the final answer, and every intermediate value (as LaTeX strings). Never by hand.
@@ -212,12 +256,14 @@ edulab/
     │   ├── scripts/generate.py
     │   ├── output/
     │   └── references/          # problem-schema.md · conventions.md
-    └── edu-math-video/          # math explainer videos — GLM-TTS + canvas animation → MP4
+    └── edu-math-video/          # math and biology explainer videos — narration + Canvas → MP4
         ├── SKILL.md
         ├── template/            # runnable sample project (engine.js · anim.js · build_audio.py · render.mjs)
         ├── shared/              # pron.py + pron.json — shared pronunciation lexicon
-        ├── scripts/             # new_video.sh · setup_check.sh · problem image & contact-sheet tools
+        ├── lib/biology-model.js # reusable cell cutaway and mechanism animation
+        ├── scripts/             # scaffold · biology demo · environment & contact-sheet tools
         ├── examples/cone-parallel/  # solid-geometry example (camera tween · cone unrolling)
+        ├── examples/mitophagy-cell/ # cell mechanism sample (continuous camera · internal degradation)
         └── reference/           # TTS setup · script writing · pronunciation · visual design · animation API
 ```
 
@@ -237,6 +283,7 @@ edulab/
 
 **edu-math-video**
 - **New problem**: never edit `engine.js`; write the per-problem `script.json` / `storyboard.md` / `anim.js`, and add new figure helpers inside `anim.js`.
+- **Biology lesson**: start with `create_biology_demo.py`, reuse `lib/biology-model.js`, and review structure, location, mechanism and evidence using `reference/biology-visuals.md`.
 - **Fix a reading**: add the word to `shared/pron.json` (`words` / `ok`) — one lexicon shared by every video.
 
 ## License
@@ -256,3 +303,9 @@ WY · [@akokoi1](https://x.com/akokoi1)
    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&legend=top-left" />
  </picture>
 </a>
+
+## Development checks
+
+Use a Python environment containing `numpy requests pypinyin pillow`, then run `npm install`, `npx playwright install chromium` and `npm test`. On Windows ensure that environment's Python is first on PATH. Checks cover old timings, thinking pauses, theorem metadata, offline audition, FFmpeg discovery, native SAPI (Windows only), Canvas subtitle holds, motion-region configuration and music controls. Tests do not call online TTS or ASR. They supplement visual and scientific review.
+
+CI recipe: copy `ci/math-video-tests.yml` into `.github/workflows/` with an account that has workflow-write permission.

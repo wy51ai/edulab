@@ -16,17 +16,23 @@ PY = a python3 that has numpy, requests, pypinyin (on macOS usually /usr/bin/pyt
 GLM_API_KEY / GLM_VOICE come from the environment, the nearest .env above this folder, or
 ~/.config/math-problem-video/.env (user-level, shared by all workspaces).
 
-TTS engine (TTS_ENGINE=auto|glm|edge|say, default auto = the first one available, in this order):
+TTS engine (TTS_ENGINE=auto|glm|windows|edge|say):
   glm   GLM-TTS, needs GLM_API_KEY. Best quality; the only engine with --asr checking.
+  windows  Windows installed desktop voices, offline (WINDOWS_VOICE, default first Chinese voice).
+           Preferred over edge when auto has no GLM key on Windows.
   edge  fallback: Microsoft Edge neural voices via `pip install edge-tts`, free, no key, needs internet
         (EDGE_VOICE, default zh-CN-XiaoxiaoNeural)
   say   last resort: macOS built-in `say`, offline, robotic (SAY_VOICE, default Tingting: the other zh voices
         cannot read Latin letters)
 """
-import hashlib, json, os, re, shutil, struct, subprocess, sys, wave
+import hashlib, json, math, os, re, shutil, struct, subprocess, sys, wave
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import requests
+from audio_math import box_mean, get_music_level
+from audio_io import to_pcm_wav
+from teaching import check_teaching
+import windows_tts
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -43,6 +49,15 @@ def _find_up(name):
 
 
 def _find_ff():
+    explicit = ENV.get("FFMPEG_BINARY")
+    if explicit:
+        binary = os.path.abspath(os.path.expanduser(explicit))
+        if os.path.isfile(binary):
+            return binary
+        raise SystemExit(f"FFMPEG_BINARY does not point to a file: {binary}")
+    d = _find_up("node_modules/ffmpeg-static/ffmpeg.exe")
+    if d:
+        return os.path.join(d, "node_modules/ffmpeg-static/ffmpeg.exe")
     d = _find_up("node_modules/ffmpeg-static/ffmpeg")  # shared node_modules at the workspace root
     if d:
         return os.path.join(d, "node_modules/ffmpeg-static/ffmpeg")
@@ -58,7 +73,6 @@ if not _pron_dir:
 sys.path.insert(0, _pron_dir)
 import pron  # noqa: E402  shared pronunciation control (<workspace>/pron.py + pron.json)
 
-FF = _find_ff()
 BUILD = os.path.join(ROOT, "build")
 TTS_DIR = os.path.join(BUILD, "tts")
 os.makedirs(TTS_DIR, exist_ok=True)
@@ -79,15 +93,20 @@ def load_env():
             if "=" in line and not line.lstrip().startswith("#"):
                 k, v = line.strip().split("=", 1)
                 env[k.strip()] = v.strip().strip("\"'")
-    for key in ("GLM_API_KEY", "GLM_VOICE", "GLM_SPEED", "TTS_ENGINE", "EDGE_VOICE", "SAY_VOICE"):
+    for key in ("GLM_API_KEY", "GLM_VOICE", "GLM_SPEED", "TTS_ENGINE", "EDGE_VOICE", "SAY_VOICE",
+                "WINDOWS_VOICE", "TTS_TIMEOUT", "FFMPEG_BINARY"):
         if os.environ.get(key):
             env[key] = os.environ[key]
     return env
 
 
 ENV = load_env()
+FF = _find_ff()
 VOICES = ("tongtong", "chuichui", "xiaochen", "jam", "kazi", "douji", "luodo")
 SPEED = float(ENV.get("GLM_SPEED", "1.05"))
+TTS_TIMEOUT = float(ENV.get("TTS_TIMEOUT", "120"))
+if not math.isfinite(SPEED) or SPEED <= 0 or not math.isfinite(TTS_TIMEOUT) or TTS_TIMEOUT <= 0:
+    raise SystemExit("GLM_SPEED and TTS_TIMEOUT must be positive finite numbers")
 
 
 def _has_edge():
@@ -104,6 +123,13 @@ def pick_engine():
         return want
     if ENV.get("GLM_API_KEY"):
         return "glm"
+    if os.name == "nt":
+        try:
+            windows_tts.choose_voice(ENV.get("WINDOWS_VOICE", ""))
+            return "windows"
+        except RuntimeError:
+            if ENV.get("WINDOWS_VOICE"):
+                raise  # do not silently replace a specifically requested voice
     if _has_edge():
         return "edge"
     if shutil.which("say"):
@@ -116,10 +142,13 @@ ENGINE = pick_engine()
 VOICE = {"glm": ENV.get("GLM_VOICE", "chuichui"),
          "edge": "edge:" + ENV.get("EDGE_VOICE", "zh-CN-XiaoxiaoNeural"),
          "say": "say:" + ENV.get("SAY_VOICE", "Tingting")}.get(ENGINE)
+if ENGINE == "windows":
+    VOICE = "windows:" + windows_tts.choose_voice(ENV.get("WINDOWS_VOICE", ""))
 if VOICE is None:
-    raise SystemExit(f"TTS_ENGINE={ENGINE!r}: use auto, glm, edge or say")
+    raise SystemExit(f"TTS_ENGINE={ENGINE!r}: use auto, glm, windows, edge or say")
 LETTER_SEP = "、" if ENGINE == "say" else " "  # see pron.to_tts
 EPISODE = json.load(open(os.path.join(ROOT, "episode.json"), encoding="utf-8"))
+MUSIC_LEVEL = get_music_level(EPISODE)
 OUT_NAME = EPISODE["output_name"]
 POP_SCENES = set(EPISODE.get("pop_scenes", []))  # scenes whose lines each get a soft "pop" SFX
 TRANSPOSE = 5  # D major, bright and bouncy
@@ -143,9 +172,20 @@ def strip_wav(raw: bytes) -> bytes:
 
 def _to_wav(src, out):
     """Any audio file -> 48 kHz mono wav without metadata."""
-    subprocess.run([FF, "-y", "-loglevel", "error", "-i", src, "-map_metadata", "-1",
-                    "-fflags", "+bitexact", "-ar", str(SR), "-ac", "1", out], check=True)
-    os.remove(src)
+    to_pcm_wav(src, out, FF, SR)
+
+
+def tts_windows_batch(jobs):
+    raw = [(text, out + ".raw.wav") for text, out in jobs]
+    try:
+        windows_tts.synthesize_many(raw, VOICE.split(":", 1)[1], SPEED,
+                                    timeout=TTS_TIMEOUT * len(raw))
+        for (_, source), (_, output) in zip(raw, jobs):
+            _to_wav(source, output)
+    finally:
+        for _, source in raw:
+            if os.path.exists(source):
+                os.remove(source)
 
 
 def tts_edge(text, out):
@@ -155,9 +195,14 @@ def tts_edge(text, out):
     rate = f"{round((SPEED - 1) * 100):+d}%"
     for attempt in range(3):
         try:
-            asyncio.run(edge_tts.Communicate(text, VOICE.split(":", 1)[1], rate=rate).save(tmp))
+            async def bounded_save():
+                await asyncio.wait_for(edge_tts.Communicate(text, VOICE.split(":", 1)[1], rate=rate).save(tmp),
+                                       timeout=TTS_TIMEOUT)
+            asyncio.run(bounded_save())
             return _to_wav(tmp, out)
         except Exception as e:  # network hiccups: the service is free but unofficial
+            if os.path.exists(tmp):
+                os.remove(tmp)
             print("edge-tts retry", attempt, e, file=sys.stderr)
     raise RuntimeError(f"edge-tts failed  text: {text}")
 
@@ -165,7 +210,8 @@ def tts_edge(text, out):
 def tts_say(text, out):
     tmp = out + ".aiff"
     # `say` rate is words per minute; ~190 matches GLM's pace for Chinese at speed 1.0
-    subprocess.run(["say", "-v", VOICE.split(":", 1)[1], "-r", str(round(190 * SPEED)), "-o", tmp, text], check=True)
+    subprocess.run(["say", "-v", VOICE.split(":", 1)[1], "-r", str(round(190 * SPEED)), "-o", tmp, text],
+                   check=True, timeout=TTS_TIMEOUT)
     _to_wav(tmp, out)
 
 
@@ -176,13 +222,21 @@ def tts(text: str, out: str):
         return tts_edge(text, out)
     if ENGINE == "say":
         return tts_say(text, out)
+    if ENGINE == "windows":
+        tmp = out + ".raw.wav"
+        try:
+            windows_tts.synthesize(text, tmp, VOICE.split(":", 1)[1], SPEED, timeout=TTS_TIMEOUT)
+            return _to_wav(tmp, out)
+        finally:
+            if os.path.exists(tmp):
+                os.remove(tmp)
     for attempt in range(4):
         r = requests.post(
             "https://open.bigmodel.cn/api/paas/v4/audio/speech",
             headers={"Authorization": f"Bearer {ENV['GLM_API_KEY']}"},
             json={"model": "glm-tts", "input": text, "voice": VOICE, "response_format": "wav",
                   "speed": SPEED, "watermark_enabled": False},
-            timeout=120,
+            timeout=TTS_TIMEOUT,
         )
         if r.status_code == 200 and r.content[:4] == b"RIFF":
             tmp = out + ".raw.wav"
@@ -466,6 +520,8 @@ def lint_script(script):
                              "prefer splitting into two lines")
             if len(ln.get("en", "")) > 95:
                 warns.append(f"{where} en subtitle {len(ln['en'])} chars -> wraps; shorten it")
+    teaching_errors, _ = check_teaching(script)
+    errors += teaching_errors
     errors += lint_storyboard(script)
     return errors, warns
 
@@ -547,6 +603,10 @@ def need_key():
 
 
 def main():
+    if "--engine" in sys.argv:
+        print(json.dumps({"engine": ENGINE, "voice": VOICE, "ffmpeg": FF,
+                          "has_glm_key": bool(ENV.get("GLM_API_KEY"))}, ensure_ascii=False))
+        return
     if "--say" in sys.argv:
         src = sys.argv[sys.argv.index("--say") + 1]
         text, notes = pron.to_tts(src, LETTER_SEP)
@@ -559,7 +619,7 @@ def main():
         tts(text, out)
         print("voice:", VOICE, " sent to TTS:", text)
         print("WROTE", out)
-        if ENV.get("GLM_API_KEY"):
+        if ENGINE == "glm" and ENV.get("GLM_API_KEY"):
             print("ASR heard:", asr(out))
         return
 
@@ -588,6 +648,8 @@ def main():
 
     script, jobs, report, unpinned = load_script()
     errors, warns = lint_script(script)
+    _, teaching_report = check_teaching(script)
+    open(os.path.join(BUILD, "teaching_report.txt"), "w", encoding="utf-8").write(teaching_report)
     rep = "\n".join(report) + f"\n\n未固定读音的生僻字/多音字: {unpinned}  (用 字[pīn] 标注，或加到 pron.json)\n"
     rep += "\n".join(["", *[f"ERROR {e}" for e in errors], *[f"warn  {w}" for w in warns],
                       f"script errors: {len(errors)}   warnings: {len(warns)}", ""])
@@ -607,8 +669,16 @@ def main():
         if unpinned:
             raise SystemExit("Resolve the pronunciation report before TTS (see build/pron_report.txt).")
         need_key()
+        unique = list({output: text for text, output in jobs}.items())
+        pending = [(text, output) for output, text in unique if not os.path.exists(output)]
         with ThreadPoolExecutor(4) as ex:
-            list(ex.map(lambda j: tts(*j), jobs))
+            if ENGINE == "windows" and pending:
+                size = min(16, max(1, (len(pending) + 3) // 4))
+                groups = [pending[i:i + size] for i in range(0, len(pending), size)]
+                list(ex.map(tts_windows_batch, groups))
+            else:
+                list(ex.map(lambda j: tts(*j), pending))
+        print("TTS cache:", len(unique) - len(pending), "/", len(unique), "unique clips reused")
         print("TTS done:", len(jobs), "clips  voice:", VOICE)
 
     t = 0.0
@@ -627,10 +697,14 @@ def main():
                 d = len(a) / SR
                 voice_parts.append((t, a))
             k += 1
-            lines.append({"zh": ln["zh"], "en": ln["en"], "start": round(t, 3), "end": round(t + d, 3)})
+            line = {"zh": ln["zh"], "en": ln["en"], "start": round(t, 3), "end": round(t + d, 3)}
+            pause = ln.get("pause_after", 0)
+            if pause:
+                line["hold_end"] = round(t + d + pause, 3)
+            lines.append(line)
             if sc["scene"] in POP_SCENES:
                 sfx.append(("pop", t))
-            t += d + GAP
+            t += d + pause + GAP
         t += TAIL - GAP + (3.2 if si == len(script) - 1 else 0)
         scenes.append({"id": sc["scene"], "start": round(st, 3), "end": round(t, 3), "lines": lines})
     total = round(t, 3)
@@ -649,17 +723,19 @@ def main():
     pk = np.abs(voice).max()
     voice *= 0.8 / pk
 
-    music = make_music(total)
-    music *= 0.5 / (np.abs(music).max() + 1e-9)
-    # sidechain ducking from voice envelope
-    win = int(0.05 * SR)
-    env = np.convolve(np.abs(voice), np.ones(win) / win, mode="same")
-    active = (env > 0.01).astype(np.float32)
-    kk = int(0.35 * SR)
-    active = np.convolve(active, np.ones(kk) / kk, mode="same")
-    active = np.clip(active * 1.5, 0, 1)
-    gain = 0.55 - 0.33 * active  # music ~ -5 dB idle, ~ -13 dB under speech
-    music *= gain
+    music = np.zeros(L, np.float32)
+    if MUSIC_LEVEL:
+        music = make_music(total)
+        music *= 0.5 / (np.abs(music).max() + 1e-9)
+        # sidechain ducking from voice envelope
+        win = int(0.05 * SR)
+        env = box_mean(np.abs(voice), win)
+        active = (env > 0.01).astype(np.float32)
+        kk = int(0.35 * SR)
+        active = box_mean(active, kk)
+        active = np.clip(active * 1.5, 0, 1)
+        gain = 0.55 - 0.33 * active  # music ~ -5 dB idle, ~ -13 dB under speech
+        music *= gain * MUSIC_LEVEL
 
     fx = np.zeros(L, np.float32)
     for kind, at in sfx:
@@ -682,7 +758,7 @@ def main():
     out, n = [], 1
     for sc in scenes:
         for ln in sc["lines"]:
-            out.append(f"{n}\n{srt_time(ln['start'])} --> {srt_time(ln['end'] + 0.25)}\n{plain(ln['zh'])}\n{plain(ln['en'])}\n")
+            out.append(f"{n}\n{srt_time(ln['start'])} --> {srt_time(ln.get('hold_end', ln['end']) + 0.25)}\n{plain(ln['zh'])}\n{plain(ln['en'])}\n")
             n += 1
     srt = os.path.join(ROOT, "..", OUT_NAME + ".srt")
     open(srt, "w", encoding="utf-8").write("\n".join(out))

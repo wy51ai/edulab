@@ -136,9 +136,9 @@ python3 lib/reaction_kernel.py                              # kernel 内置自�
 
 ![edu-math-video 演示](edu-math-video.png)
 
-把一道数学题（几何、代数、函数、行程问题……）做成 **16:9、1920×1080 的讲解视频 MP4**：智谱 **GLM-TTS** 中文配音、中英双语字幕（同时输出 `.srt`）、按旁白时间轴驱动的手绘笔记本风格 canvas 动画。输入可以是题目截图或文字。
+把数学题（几何、代数、函数、行程问题……）和适用的生物机制做成 **16:9、1920×1080 的讲解视频 MP4**：中文配音、中英双语字幕（同时输出 `.srt`）、按旁白时间轴驱动的 Canvas 动画。可用 GLM-TTS 或受支持的兜底引擎，包括 Windows 免费离线中文配音。输入可以是题目截图或文字；生物示例也可作为概念微课。
 
-**图会"讲题"**：每句旁白在图上都有一个"指 → 动 → 留"的动作（相等线段滑过去重合、全等三角形叠上去、3D 相机转到俯视、圆锥侧面展开成扇形……），用 `S.at(k, f)`（第 k 句开始后 f 比例处）定时，绝不写死秒数；`motion` 检查会拦下静止不动的句子。
+**图会"讲题"**：每句旁白在图上都有一个"指 → 动 → 留"的动作（相等线段滑过去重合、全等三角形叠上去、3D 相机转到俯视、圆锥侧面展开成扇形……），用 `S.at(k, f)`（第 k 句开始后 f 比例处）定时，绝不写死秒数；`motion` 检查会标出非豁免场景中的静止片段。
 
 **流水线**（每个视频一个文件夹，建在用户当前目录）：
 
@@ -147,15 +147,15 @@ script.json ──build_audio.py──► timeline.json + mix.wav + <name>.srt  
 anim.js + engine.js ──node render.mjs video──► <name>.mp4              （Playwright + ffmpeg，30 fps）
 ```
 
-**护栏**：第一幕展示原题并逐条框出条件；`tts` 字段只能是能念出来的中文（无数字/数学符号）；多音字必须固定读音（`长[cháng]`，共享 `pron.json` 词表），`--check` 为 0 才允许调用付费 TTS；先免费 `--preview` + 截图拼图审查版面，再生成真配音；`--asr` 把配音转回文字核对字母读音。
+**护栏**：开头给出看得见的问题，使用原题条件前先讲清依据；`tts` 字段只能是能念出来的中文（无数字/数学符号）；多音字必须固定读音（`长[cháng]`，共享 `pron.json` 词表），`--check` 为 0 才允许调用付费 TTS。先免费 `--preview` + 截图拼图审查，再生成真配音。可选 `--asr` 使用在线识别，发送配音前必须获得授权；离线课程可跳过并说明实际验证范围。
 
-**触发词**：讲解视频、解题视频、例题精讲、微课、数学题视频；math explainer video、walkthrough video 等。
+**触发词**：讲解视频、解题视频、例题精讲、数学题视频、生物微课、细胞动画；math explainer video、biology explainer video、cell animation 等。技能名保持 `edu-math-video`。
 
 ### 依赖
 
 - Python 3 + `numpy requests pypinyin pillow`；Node.js 18+ + `playwright` + `ffmpeg-static`（在工作目录装一次，`scripts/new_video.sh` 会生成 `package.json`）；Google Chrome 或 Playwright Chromium。
-- 由你自己提供的智谱 **`GLM_API_KEY`**，写在 `~/.config/math-problem-video/.env`（见 `reference/glm-tts-setup.md`）。
-- **没有 key？** 自动兜底（`TTS_ENGINE=auto`）：装了 [edge-tts](https://github.com/rany2/edge-tts) 就用它（免费神经网络音色，需联网），否则用 macOS 自带的 `say`（离线，机械感明显）。也可用 `TTS_ENGINE=glm|edge|say` 指定。
+- 可选智谱 **`GLM_API_KEY`**，由你自己提供，写在 `~/.config/math-problem-video/.env`（见 `reference/glm-tts-setup.md`）。
+- **没有 key？** 自动兜底（`TTS_ENGINE=auto`）：装了 [edge-tts](https://github.com/rany2/edge-tts) 就用它（免费神经网络音色，需联网），否则用 macOS 自带的 `say`（离线，机械感明显）。Windows 已安装中文桌面语音时优先使用系统离线配音，再考虑 Edge。也可用 `TTS_ENGINE=glm|windows|edge|say` 指定。
 
 ### 手动跑流水线（不经过 Claude）
 
@@ -168,7 +168,51 @@ python3 build_audio.py --preview && node render.mjs motion && node render.mjs st
 python3 build_audio.py && node render.mjs video 6                   # 真配音，然后渲染（6 = 并行页数）
 ```
 
+### 视频教学升级（0.2.0）
+
+- `pause_after` 为关键问题留思考时间，视频和 SRT 都保留问题字幕。
+- `theorem` 声明定理条件、依据和结论，`--check` 生成教学检查报告；它检查结构，不能代替数学验算。
+- Windows 支持免费系统离线中文配音，增加 PowerShell 建项目入口与跨平台环境检查。
+- 运动指标在浏览器内计算，直接导出 Canvas 帧；音频平滑改为线性算法，减少渲染与混音等待。
+- 示例增加定理条件核对和迁移题；不含新字段的旧脚本时序不变。
+
+详见 [教学质量指南](skills/edu-math-video/reference/teaching-quality.md)。Windows 使用完整技能路径运行 `SKILL/scripts/new_video.ps1 -Workspace $PWD -Name my_problem`，然后用 `python SKILL/scripts/setup_check.py my_problem` 检查环境；工作目录仍使用用户指定的目录。
+
+### 细胞机制课程（0.3.0）
+
+![线粒体自噬课程样片](skills/edu-math-video/examples/mitophagy-cell/preview.png)
+
+- 可复用的 [Canvas 细胞模型](skills/edu-math-video/lib/biology-model.js) 保持同一个细胞、线粒体与溶酶体，镜头从整体进入局部机制，再回到整体。
+- 约一分钟的 [mitophagy-cell 示例](skills/edu-math-video/examples/mitophagy-cell/) 以“坏掉的线粒体，细胞怎样清理？”开场，演出包裹、闭合、融合和内部降解，结尾给出迁移问题。一句旁白解释一个看得见的变化。
+- 可选 `episode.motion_regions` 让动作检查覆盖实际模型区域，不再默认所有图形都在左半屏。可选 `music_level` 是 `0` 到 `1` 的数字，默认 `1`；`0` 关闭背景音乐，保留旁白和已配置音效。旧数学项目沿用默认行为。
+- 先审阅 45～60 秒样片再导出完整课程。结构和颗粒数量是教学示意，不能当作实验测量；活性氧含量不能改称存活率。项目不承诺流量或学习提升幅度。
+
+在自己的课程目录创建独立示例（替换下面路径）：
+
+```bash
+python /path/to/edu-math-video/scripts/create_biology_demo.py --workspace /path/to/lessons --name cell-classroom-demo
+cd /path/to/lessons/cell-classroom-demo
+python build_audio.py --check
+python build_audio.py --preview
+node render.mjs motion
+node render.mjs stills auto
+# 查看截图后，再生成真实配音和视频：
+python build_audio.py
+node render.mjs video 6
+```
+
+模型差异、机制顺序与视觉因果审查清单见 [生物可视化规范](skills/edu-math-video/reference/biology-visuals.md)。模型是 Canvas 教学剖面示意，不是标本重建或互动课堂。
+
+
+### 本地生成提速（0.3.1）
+
+Windows 离线配音在一个语音引擎中连续生成多段音频，格式已匹配的 PCM 音频省去 FFmpeg 转换，重复旁白只合成一次。视频默认采用 x264 `fast`，沿用 1080p、30 fps 和 CRF 18；本地输入与成品的内容哈希均一致时，直接复用已完成的 MP4。
+
+一台 Windows 机器上的同一段 60 秒细胞课程，**首次配音加导出从 93 秒降到 71 秒**；内容未变的重复导出约 **0.74 秒**。实测不含编写讲稿的时间，不代表所有机器的耗时。`node render.mjs video 4 --fresh --preset medium` 可强制使用原压缩设置重新生成。缓存范围、实测条件与旧项目升级方法见 [性能说明](skills/edu-math-video/reference/performance.md)。
+
 ## 工作原理
+
+交互教学网页采用下面的计算核心与模板流程；视频采用上面的配音与 Canvas 流水线。
 
 1. **得到 problem spec** —— 三入口归一成结构化描述（几何体类型与尺寸、已知条件、所求、语言）。
 2. **kernel 精确计算** —— sympy 算出精确坐标、关键向量、法向量、最终答案及各步中间量（LaTeX 字符串），绝不心算。
@@ -212,12 +256,14 @@ edulab/
     │   ├── scripts/generate.py
     │   ├── output/
     │   └── references/          # problem-schema.md · conventions.md
-    └── edu-math-video/          # 数学题讲解视频 — GLM-TTS + canvas 动画 → MP4
+    └── edu-math-video/          # 数学与生物讲解视频 — 配音 + Canvas → MP4
         ├── SKILL.md
         ├── template/            # 可直接运行的示例项目（engine.js · anim.js · build_audio.py · render.mjs）
         ├── shared/              # pron.py + pron.json —— 共享读音词表
-        ├── scripts/             # new_video.sh · setup_check.sh · 题目图片与截图拼图工具
+        ├── lib/biology-model.js # 可复用细胞剖面与机制动画
+        ├── scripts/             # 建项目 · 生物示例 · 环境检查与截图工具
         ├── examples/cone-parallel/  # 立体几何示例（相机转俯视 · 圆锥展开）
+        ├── examples/mitophagy-cell/ # 细胞机制样片（连续镜头 · 内部降解）
         └── reference/           # TTS 配置 · 脚本写法 · 读音 · 画面设计 · 动画 API
 ```
 
@@ -237,6 +283,7 @@ edulab/
 
 **edu-math-video**
 - **做新题**：不改 `engine.js`；每道题重写 `script.json` / `storyboard.md` / `anim.js`，新图形函数写在 `anim.js` 里。
+- **做生物课程**：用 `create_biology_demo.py` 创建示例，复用 `lib/biology-model.js`，按 `reference/biology-visuals.md` 审查结构、位置、机制与证据。
 - **修读音**：把词加进 `shared/pron.json`（`words` / `ok`），所有视频共用一份词表。
 
 ## License
@@ -256,3 +303,9 @@ WY · [@akokoi1](https://x.com/akokoi1)
    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=wy51ai/edulab&type=date&legend=top-left" />
  </picture>
 </a>
+
+## 开发检查
+
+使用已安装 `numpy requests pypinyin pillow` 的 Python 环境，运行 `npm install`、`npx playwright install chromium`、`npm test`。Windows 多个 Python 并存时，将该环境的 Python 放在 PATH 首位。测试包含旧时序、思考停顿、定理声明、离线试听、FFmpeg 发现、Windows 系统语音、Canvas 字幕保留、动作区域配置与音乐控制；不会调用在线配音或识别服务。自动检查仍须配合画面与科学审阅。
+
+CI 配置模板见 `ci/math-video-tests.yml`；拥有 workflow 写入权限的维护者可复制到 `.github/workflows/` 启用。

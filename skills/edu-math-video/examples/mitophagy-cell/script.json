@@ -1,0 +1,19 @@
+[
+  {"scene":"intro","lines":[
+    {"zh":"这颗线粒体坏了，细胞怎么把它清理掉？","tts":"这颗线粒体坏了，细胞怎么把它清理掉？","en":"This mitochondrion is damaged. How can the cell remove it?"},
+    {"zh":"我们靠近它，看看细胞内部发生了什么。","tts":"我们靠近它，看看细胞内部发生了什么。","en":"Let's move closer and see what happens inside the cell."}
+  ]},
+  {"scene":"journey","lines":[
+    {"zh":"线粒体有内外两层膜，里面的折叠叫嵴。","tts":"线粒体有内外两层膜，里面的折叠叫嵴[jǐ]。","en":"Mitochondria have two membranes. Inner folds are called cristae."},
+    {"zh":"一片隔离膜伸过来，逐渐包住受损线粒体。","tts":"一片隔离膜伸过来，逐渐包住受损线粒体。","en":"An isolation membrane grows around the damaged mitochondrion."},
+    {"zh":"两端闭合，形成双膜包围的自噬体。","tts":"两端闭合，形成双膜包围的自噬体。","en":"The opening closes, forming a double-membrane autophagosome."},
+    {"zh":"它带着受损线粒体，靠近溶酶体。","tts":"它带着受损线粒体，靠近溶酶体。","en":"It carries the damaged mitochondrion toward a lysosome."},
+    {"zh":"外层膜与溶酶体融合，内容物进入其中。","tts":"外层膜与溶酶体融合，内容物进入其中。","en":"Its outer membrane fuses with the lysosome."},
+    {"zh":"里面的水解酶，把这些内容物分解。","tts":"里面的水解酶，把这些内容物分解。","en":"Hydrolytic enzymes break down the contents inside."},
+    {"zh":"清除受损线粒体，有助于减少活性氧的积累。","tts":"清除受损线粒体，有助于减少活性氧的积累。","en":"Removing damaged mitochondria can limit reactive oxygen buildup."}
+  ]},
+  {"scene":"outro","lines":[
+    {"zh":"想一想，清理受阻，活性氧可能怎样变化？","tts":"想一想，清理受阻，活性氧可能怎样变化？","en":"If this clearance is blocked, what may happen to reactive oxygen?","pause_after":1.5},
+    {"zh":"更容易积累。记住：包裹、融合、降解。","tts":"更容易积累。记住，包裹，融合，降解。","en":"It may accumulate. Remember: enclose, fuse, degrade."}
+  ]}
+]

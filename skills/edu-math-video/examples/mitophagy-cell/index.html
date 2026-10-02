@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><title>线粒体的清理过程</title>
+<style>html,body{margin:0;background:#071426;color:#eaf7ff;font-family:'Microsoft YaHei',sans-serif}canvas{display:block;width:100vw;max-width:1920px;height:auto;margin:auto}#bar{text-align:center;padding:12px}button{padding:6px 14px}body.render #bar{display:none}</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<div id="bar"><button id="play">播放</button> <input id="seek" type="range" min="0" max="1000" value="0" style="width:60%"></div>
+<audio id="au" preload="none"></audio>
+<script src="build/timeline.js"></script><script>window.NO_BOIL=true;if(!window.TIMELINE.preview_only)document.getElementById('au').src='build/mix.wav';</script>
+<script src="engine.js"></script><script src="biology-model.js"></script><script src="anim.js"></script><script>boot();</script>
+</body></html>

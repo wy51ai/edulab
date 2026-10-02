@@ -1,7 +1,7 @@
 {
   "name": "@wy51ai/edulab",
-  "version": "0.1.8",
-  "description": "A Claude Code plugin: a collection of education skills that turn academic problems into interactive lesson web pages and explainer videos. Skills: edu-solid-geometry (solid geometry, coordinate+vector method, 3D Three.js + MathJax), edu-analytic-geometry (conic sections, exact sympy-driven solutions with a live interactive 2D Canvas board + KaTeX), edu-chem-reaction (microscopic 3D chemistry reaction demos — sympy-balanced, atom-conservation morph + mechanism engines, Three.js + KaTeX), and edu-math-video (math problem explainer videos — Chinese GLM-TTS voice-over, bilingual zh+en subtitles, hand-drawn canvas animation rendered to MP4).",
+  "version": "0.3.1",
+  "description": "Education skills for interactive lesson pages and narrated videos: solid geometry, analytic geometry, chemistry reaction demonstrations, and edu-math-video for math explanations and biology mechanisms with reusable Canvas cell models, Chinese narration, bilingual subtitles and MP4 export.",
   "keywords": [
     "claude-code",
     "claude-code-plugin",
@@ -14,6 +14,8 @@
     "math",
     "geometry",
     "chemistry",
+    "biology",
+    "cell-biology",
     "chemical-reaction",
     "combustion",
     "redox",
@@ -54,5 +56,12 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "scripts": {
+    "test": "python -m unittest discover -s tests -v && node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.49",
+    "ffmpeg-static": "^5.3.0"
   }
 }
