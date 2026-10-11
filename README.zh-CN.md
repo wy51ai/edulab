@@ -231,7 +231,99 @@ python3 build_audio.py --preview && node render.mjs motion && node render.mjs st
 python3 build_audio.py && node render.mjs video 6
 ```
 
+## 技能：edu-motion-problems
+
+把一道小学行程问题（追及 / 相遇 / 环形跑道）解成一个自包含、零外部依赖的交互课件：题面 + 道路 / 环形跑道动画 + s-t 图 + 时间滑块驱动实时重算 + 动态读数 + 三态状态条 + 分步讲解。原生 Canvas 2D，无 KaTeX / Three.js / CDN，离线可用、可直嵌小程序 web-view。
+
+**覆盖题型**：追及（同向）、相遇（相向）、环形追及、环形相遇。统一物理模型 `kind ∈ {linear, circular} × direction ∈ {same, opposite}`，s-t 图画「展开弧长（不取模）」，四种题型共用同一渲染器。
+
+**答案先行采样**：追上 / 相遇时间、相遇点、圈数恒为整数，只用标准库 `random` / `math`，无需 sympy / CAS。
+
+**触发词**：行程问题、追及问题、相遇问题、环形跑道；motion problems, pursuit, catch-up, meeting, circular track 等。
+
+### 依赖
+
+无——任意 Python 3 即可；生成的网页不发任何网络请求。
+
+### 命令行直接生成（不经过 Claude）
+
+```bash
+cd skills/edu-motion-problems
+python3 scripts/generate.py list
+python3 scripts/generate.py pursue 42 ./pursue.html
+python3 scripts/generate.py all ./out_dir   # 全部题型，各出 2 个随机变体
+```
+
+## 技能：edu-primary-applied
+
+小学应用题总入口——**62 类**：追及 / 相遇 / 环形跑道、和差 / 和倍 / 差倍、盈亏、年龄、平均数、鸡兔同笼、植树、工程、周期、归一 / 归总、流水行船、火车过桥、平均速度、分数、百分数、比与比例、比例尺、浓度、折扣、还原、移多补少、爬楼 / 锯木 / 敲钟、牛吃草、抽屉原理、消去法、等差数列、租船最省钱、页码、三数和差倍、方阵、时钟夹角、容斥（韦恩图拖圆）、排列组合搭配（连线图）、逻辑推理（排除法）、烙饼（时间轴）、田忌赛马（拖马配对）、利率利息、天平（拖砝码），以及 8 类几何（等底等高三角形 / 平行四边形、梯形等积变形、平行四边形割补、圆周长 / 面积 / 半圆）。每类都解成一个自包含、零外部依赖的交互课件。
+
+**分派式多渲染器**：`STATE[type]` / `DRAW[scene.kind]` / `DIAGRAM[diagram.kind]` 三张表 + 缓存的动态变量 `evalExpr`。加一个新题型 = 写 generator + build + steps + 一个 `STATE` 分派项；渲染器按家族复用（road / circular / bar-model / interval / progress / sequence / train / swap / venn / link-graph / logic-table / timeline / matchup / balance / geodrag / circle / phalanx / clock）。
+
+**答案先行采样**：答案量恒为整数（纯标准库）。
+
+**触发词**：小学应用题、和差、和倍、差倍、鸡兔同笼、工程、分数、百分数、比与比例、浓度、折扣、追及、相遇、环形跑道；primary applied problem, sum and difference, chicken and rabbit, work rate, fraction, percentage, ratio 等。
+
+### 依赖
+
+无——任意 Python 3 即可；生成的网页不发任何网络请求。
+
+### 命令行直接生成（不经过 Claude）
+
+```bash
+cd skills/edu-primary-applied
+python3 scripts/generate.py list
+python3 scripts/generate.py sum-diff 42 ./sum-diff.html
+python3 scripts/generate.py all ./out_dir
+```
+
+## 技能：edu-primary-geometry
+
+把一道小学数学「图形与几何」题——**9 类**：面积公式推导（平行四边形 / 三角形 / 梯形 / 圆）、组合图形面积、不规则图形方格估算、三视图、平移旋转轴对称、长方体体积 / 表面积——解成一个自包含、零外部依赖的交互课件，带**可拖拽画布**（顶点吸附整数网格或沿约束线滑动；滑块当「阶段」驱动「剪 → 移 → 拼」动画）。
+
+**可拖拽几何**：共享拖拽层（`geomTransform` 世界坐标 + 指针命中 + `applySnap` 吸附）支撑剪拼推导、方格切分、三视图与对称变换。
+
+**答案先行采样**：底 / 高 / 面积 / 体积恒为整数（纯标准库）。
+
+**触发词**：小学几何、面积、平行四边形、三角形、梯形、圆、组合图形、三视图、平移旋转、轴对称、表面积、体积；geometry, area, parallelogram, triangle, trapezoid, circle, three views, symmetry, cuboid volume 等。
+
+### 依赖
+
+无——任意 Python 3 即可；生成的网页不发任何网络请求。
+
+### 命令行直接生成（不经过 Claude）
+
+```bash
+cd skills/edu-primary-geometry
+python3 scripts/generate.py list
+python3 scripts/generate.py area-parallelogram 42 ./parallelogram.html
+python3 scripts/generate.py all ./out_dir
+```
+
+## 技能：edu-statistics
+
+把一道小学数学「统计与概率」题——**2 类**：统计图表（条形，拖柱顶补全缺失数据）、可能性（树状图，拖手柄沿数轴数叶子）——解成一个自包含、零外部依赖的交互课件，带可拖拽统计图。
+
+**分派式多渲染器** + 复用 edu-primary-geometry 的拖拽层（`geomTransform` + `applySnap` + `dragAxis` 竖向 / 横向吸附）。统计量 / 概率量恒为整数（纯标准库）。
+
+**触发词**：小学统计、统计图、条形统计图、折线统计图、扇形统计图、可能性、概率、树状图、枚举；statistics, bar chart, line chart, pie chart, probability, tree diagram 等。
+
+### 依赖
+
+无——任意 Python 3 即可；生成的网页不发任何网络请求。
+
+### 命令行直接生成（不经过 Claude）
+
+```bash
+cd skills/edu-statistics
+python3 scripts/generate.py list
+python3 scripts/generate.py stat-chart 42 ./stat-chart.html
+python3 scripts/generate.py all ./out_dir
+```
+
 ## 工作原理
+
+小学技能（edu-motion-problems、edu-primary-applied、edu-primary-geometry、edu-statistics）走一条更轻的流水线——不用 sympy：**答案先行好数采样**（标准库 `random` / `math`）喂给**分派式渲染器**（`STATE[type]` / `DRAW[scene.kind]` / `DIAGRAM[diagram.kind]`），注入零依赖原生 Canvas 2D 模板。下面的中学技能则用 sympy 精确内核。
 
 1. **得到 problem spec** —— 三入口归一成结构化描述（几何体类型与尺寸、已知条件、所求、语言）。
 2. **kernel 精确计算** —— sympy 算出精确坐标、关键向量、法向量、最终答案及各步中间量（LaTeX 字符串），绝不心算。
@@ -289,13 +381,41 @@ edulab/
     │   ├── scripts/
     │   ├── examples/laser-curvature/  # 几何光学示例
     │   └── reference/
-    └── edu-chem-video/          # 化学题讲解视频 — GLM-TTS + 黑板动画 → MP4
+    ├── edu-chem-video/          # 化学题讲解视频 — GLM-TTS + 黑板动画 → MP4
+    │   ├── SKILL.md
+    │   ├── template/            # 黑板主题（engine.js · chem.js · anim.js）
+    │   ├── shared/
+    │   ├── scripts/             # 另有 chem_check.py —— 配平与守恒核对
+    │   ├── examples/equilibrium/    # 化学平衡 / 三段式示例
+    │   └── reference/
+    ├── edu-motion-problems/     # 小学行程问题（追及 / 相遇 / 环形）— 零依赖 Canvas 2D
+    │   ├── SKILL.md
+    │   ├── template/board.html  # 数据驱动模板（道路 / 环形 + s-t 图 + motionState(t)）
+    │   ├── lib/                 # good_numbers.py · builders.py · steps.py
+    │   ├── scripts/generate.py
+    │   ├── tests/
+    │   └── references/
+    ├── edu-primary-applied/     # 小学应用题（62 类）— 分派式渲染器，零依赖 Canvas 2D
+    │   ├── SKILL.md
+    │   ├── template/board.html  # 数据驱动模板（STATE/DRAW/DIAGRAM 分派 + evalExpr）
+    │   ├── lib/                 # generators.py · builders.py · steps.py
+    │   ├── scripts/generate.py
+    │   ├── tests/ · verify.mjs
+    │   └── references/
+    ├── edu-primary-geometry/    # 小学图形与几何（9 类）— 可拖拽画布，零依赖 Canvas 2D
+    │   ├── SKILL.md
+    │   ├── template/board.html  # 数据驱动模板（STATE/DRAW 分派 + geomTransform 拖拽层）
+    │   ├── lib/                 # generators.py · builders.py · steps.py
+    │   ├── scripts/generate.py
+    │   ├── tests/ · verify.mjs
+    │   └── references/
+    └── edu-statistics/          # 小学统计与概率（2 类）— 可拖拽统计图，零依赖 Canvas 2D
         ├── SKILL.md
-        ├── template/            # 黑板主题（engine.js · chem.js · anim.js）
-        ├── shared/
-        ├── scripts/             # 另有 chem_check.py —— 配平与守恒核对
-        ├── examples/equilibrium/    # 化学平衡 / 三段式示例
-        └── reference/
+        ├── template/board.html  # 数据驱动模板（STATE/DRAW 分派 + dragAxis 拖拽层）
+        ├── lib/                 # generators.py · builders.py · steps.py
+        ├── scripts/generate.py
+        ├── tests/ · verify.mjs
+        └── references/
 ```
 
 ## 扩展
@@ -323,6 +443,10 @@ edulab/
 **edu-chem-video**
 - **做新题**：不改 `engine.js`；每道题重写自己的文件。通用化学道具加在 `chem.js`。动笔前用 `scripts/chem_check.py` 核对方程式。
 - **修读音**：把词加进 `shared/pron.json`。
+
+**小学技能（edu-motion-problems · edu-primary-applied · edu-primary-geometry · edu-statistics）**
+- **加题型**：在 `lib/generators.py` 写答案先行的 `gen_*`（edu-motion-problems 在 `lib/good_numbers.py`），在 `lib/builders.py` 写 `build_*`、`lib/steps.py` 写分步文案，注册进 `scripts/generate.py` 的 `REGISTRY`，再加一个 `STATE[type]` 分派项。若题型 `scene.kind` 落在既有渲染器家族，前端零改动；新家族才在 `template/board.html` 加一个 `DRAW` 渲染器。
+- **四者共用同一配方**：「答案先行好数采样 + 分派式渲染器 + 零依赖原生 Canvas 2D」——见各技能 `references/conventions.md` §7。
 
 ## License
 

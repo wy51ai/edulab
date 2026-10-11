@@ -231,7 +231,99 @@ python3 build_audio.py --preview && node render.mjs motion && node render.mjs st
 python3 build_audio.py && node render.mjs video 6
 ```
 
+## Skill: edu-motion-problems
+
+Solves one primary-school motion problem (pursuit / meeting / circular track) into a self-contained, zero-dependency interactive lesson page: the problem statement, a road / circular-track animation, an s–t graph, a time slider that drives live recomputation, dynamic readouts, a three-state status bar, and step-by-step narration. Built on native Canvas 2D — no KaTeX / Three.js / CDN — so it works fully offline and embeds directly in a mini-program web-view.
+
+**Problem types covered**: pursuit (same direction), meeting (opposite direction), circular-track pursuit, circular-track meeting. One unified physical model — `kind ∈ {linear, circular} × direction ∈ {same, opposite}` — with an "unfolded arc-length" s–t graph so the same renderer serves all four.
+
+**Answer-first sampling**: the meet time, meeting point and lap count are always integers, sampled with the stdlib `random` / `math` only — no sympy / CAS.
+
+**Trigger words**: motion problems, pursuit, catch-up, meeting, circular track, primary math; 行程问题、追及问题、相遇问题、环形跑道 etc.
+
+### Dependency
+
+None — any Python 3; the generated page makes zero network requests.
+
+### Generate from the command line (without Claude)
+
+```bash
+cd skills/edu-motion-problems
+python3 scripts/generate.py list
+python3 scripts/generate.py pursue 42 ./pursue.html
+python3 scripts/generate.py all ./out_dir   # every type, 2 random variants each
+```
+
+## Skill: edu-primary-applied
+
+The general entry point for primary-school applied (word) problems — **62 types**: pursuit / meeting / circular track, sum-difference / sum-multiple / difference-multiple, profit-loss, age, average, chicken-rabbit, planting, work-rate, cycle, unit rate / aggregate, boat-current, train-bridge, average speed, fractions, percentages, ratio & proportion, map scale, concentration, discount, restore, average-move, stairs / sawing / clock-chime, cow-grazing, pigeonhole, elimination, arithmetic sequence, boat-charter optimization, page-digit, three-number sum/difference/multiple, phalanx, clock angle, Venn (draggable circles), permutations & matchings, logic-table, pancake, Tian Ji horse-racing, interest, balance-equation, and 8 geometry types (equal-base triangle/parallelogram, trapezoid, recomposition, circle circumference/area, semicircle). Each becomes a self-contained, zero-dependency interactive page.
+
+**Dispatch-table renderer**: `STATE[type]` / `DRAW[scene.kind]` / `DIAGRAM[diagram.kind]` plus a cached dynamic-variable `evalExpr`. Adding a new type = a generator + build + steps + one `STATE` entry; renderers are reused by family (road / circular / bar-model / interval / progress / sequence / train / swap / venn / link-graph / logic-table / timeline / matchup / balance / geodrag / circle / phalanx / clock).
+
+**Answer-first sampling**: every answer is an integer (stdlib only).
+
+**Trigger words**: primary applied problem, sum and difference, chicken and rabbit, work rate, fraction, percentage, ratio, concentration, discount, age, average, planting, pursuit, meeting, circular track; 小学应用题、和差、和倍、差倍、鸡兔同笼、工程、分数、百分数、比与比例、浓度、折扣 etc.
+
+### Dependency
+
+None — any Python 3; the generated page makes zero network requests.
+
+### Generate from the command line (without Claude)
+
+```bash
+cd skills/edu-primary-applied
+python3 scripts/generate.py list
+python3 scripts/generate.py sum-diff 42 ./sum-diff.html
+python3 scripts/generate.py all ./out_dir
+```
+
+## Skill: edu-primary-geometry
+
+Solves one primary-school "shape & measure" problem — **9 types**: area derivation (parallelogram / triangle / trapezoid / circle), composite-shape area, irregular-shape grid estimation, three views, translation / rotation / symmetry, cuboid volume / surface area — into a self-contained, zero-dependency interactive page with a **draggable canvas** (vertices snap to an integer grid or slide along a constraint line; a stage slider steps the "cut → move → paste" animation).
+
+**Draggable geometry**: a shared drag layer (`geomTransform` world coordinates + pointer hit-testing + `applySnap`) powers cut-rearrange derivations, grid-split, solid views and transform symmetry. The "cut → move → paste" stage is the slider.
+
+**Answer-first sampling**: base / height / area / volume are always integers (stdlib only).
+
+**Trigger words**: geometry, area, parallelogram, triangle, trapezoid, circle, composite shape, three views, symmetry, cuboid volume; 小学几何、面积、平行四边形、三角形、梯形、圆、组合图形、三视图、平移旋转、轴对称、表面积、体积 etc.
+
+### Dependency
+
+None — any Python 3; the generated page makes zero network requests.
+
+### Generate from the command line (without Claude)
+
+```bash
+cd skills/edu-primary-geometry
+python3 scripts/generate.py list
+python3 scripts/generate.py area-parallelogram 42 ./parallelogram.html
+python3 scripts/generate.py all ./out_dir
+```
+
+## Skill: edu-statistics
+
+Solves one primary-school "statistics & probability" problem — **2 types**: bar-chart completion (drag a bar top to fill in the missing value) and probability tree diagrams (drag a handle along a number line to count leaves) — into a self-contained, zero-dependency interactive page with a draggable chart.
+
+**Dispatch-table renderer** with the shared drag layer from edu-primary-geometry (`geomTransform` + `applySnap` + `dragAxis` for vertical/horizontal snapping). Statistics and probability quantities are always integers (stdlib only).
+
+**Trigger words**: statistics, bar chart, line chart, pie chart, probability, tree diagram; 小学统计、统计图、条形统计图、折线统计图、扇形统计图、可能性、概率、树状图、枚举 etc.
+
+### Dependency
+
+None — any Python 3; the generated page makes zero network requests.
+
+### Generate from the command line (without Claude)
+
+```bash
+cd skills/edu-statistics
+python3 scripts/generate.py list
+python3 scripts/generate.py stat-chart 42 ./stat-chart.html
+python3 scripts/generate.py all ./out_dir
+```
+
 ## How it works
+
+The elementary skills (edu-motion-problems, edu-primary-applied, edu-primary-geometry, edu-statistics) run a lighter pipeline — no sympy: **answer-first good-number sampling** (stdlib `random` / `math`) feeds a **dispatch-table renderer** (`STATE[type]` / `DRAW[scene.kind]` / `DIAGRAM[diagram.kind]`) into a zero-dependency native Canvas 2D template. The secondary skills below use exact sympy kernels.
 
 1. **Get a problem spec** — normalize all three entry points into a structured description (body type and dimensions, given conditions, the quantity asked, language).
 2. **Exact kernel computation** — sympy computes exact coordinates, key vectors, normals, the final answer, and every intermediate value (as LaTeX strings). Never by hand.
@@ -289,13 +381,41 @@ edulab/
     │   ├── scripts/
     │   ├── examples/laser-curvature/  # geometric-optics example
     │   └── reference/
-    └── edu-chem-video/          # chemistry explainer videos — GLM-TTS + chalkboard canvas → MP4
+    ├── edu-chem-video/          # chemistry explainer videos — GLM-TTS + chalkboard canvas → MP4
+    │   ├── SKILL.md
+    │   ├── template/            # chalkboard theme (engine.js · chem.js · anim.js)
+    │   ├── shared/
+    │   ├── scripts/             # plus chem_check.py — balance and conservation check
+    │   ├── examples/equilibrium/    # ICE-table / equilibrium example
+    │   └── reference/
+    ├── edu-motion-problems/     # primary motion problems (pursuit / meeting / circular) — zero-dep Canvas 2D
+    │   ├── SKILL.md
+    │   ├── template/board.html  # data-driven template (road / circular + s-t graph + motionState(t))
+    │   ├── lib/                 # good_numbers.py · builders.py · steps.py
+    │   ├── scripts/generate.py
+    │   ├── tests/
+    │   └── references/
+    ├── edu-primary-applied/     # primary word problems (62 types) — dispatch-table renderer, zero-dep Canvas 2D
+    │   ├── SKILL.md
+    │   ├── template/board.html  # data-driven template (STATE/DRAW/DIAGRAM dispatch + evalExpr)
+    │   ├── lib/                 # generators.py · builders.py · steps.py
+    │   ├── scripts/generate.py
+    │   ├── tests/ · verify.mjs
+    │   └── references/
+    ├── edu-primary-geometry/    # primary shape & measure (9 types) — draggable canvas, zero-dep Canvas 2D
+    │   ├── SKILL.md
+    │   ├── template/board.html  # data-driven template (STATE/DRAW dispatch + geomTransform drag layer)
+    │   ├── lib/                 # generators.py · builders.py · steps.py
+    │   ├── scripts/generate.py
+    │   ├── tests/ · verify.mjs
+    │   └── references/
+    └── edu-statistics/          # primary statistics & probability (2 types) — draggable chart, zero-dep Canvas 2D
         ├── SKILL.md
-        ├── template/            # chalkboard theme (engine.js · chem.js · anim.js)
-        ├── shared/
-        ├── scripts/             # plus chem_check.py — balance and conservation check
-        ├── examples/equilibrium/    # ICE-table / equilibrium example
-        └── reference/
+        ├── template/board.html  # data-driven template (STATE/DRAW dispatch + dragAxis drag layer)
+        ├── lib/                 # generators.py · builders.py · steps.py
+        ├── scripts/generate.py
+        ├── tests/ · verify.mjs
+        └── references/
 ```
 
 ## Extending
@@ -323,6 +443,10 @@ edulab/
 **edu-chem-video**
 - **New problem**: leave `engine.js` unchanged; write the per-problem files. Shared chemistry props go in `chem.js`. Run `scripts/chem_check.py` on the equation before drawing.
 - **Fix a reading**: add the word to `shared/pron.json`.
+
+**Elementary skills (edu-motion-problems · edu-primary-applied · edu-primary-geometry · edu-statistics)**
+- **Add a problem type**: write an answer-first `gen_*` in `lib/generators.py` (or `lib/good_numbers.py` for edu-motion-problems), a `build_*` in `lib/builders.py`, step text in `lib/steps.py`, register it in `scripts/generate.py`'s `REGISTRY`, and add a `STATE[type]` dispatch entry. If the type's `scene.kind` falls in an existing renderer family, the front-end needs no changes; a new family adds one `DRAW` renderer in `template/board.html`.
+- **One shared recipe** across all four: "answer-first good-number sampling + dispatch-table renderer + zero-dependency native Canvas 2D" — see each skill's `references/conventions.md` §7.
 
 ## License
 

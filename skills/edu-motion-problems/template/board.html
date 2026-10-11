@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小学行程问题 · 交互课件</title>
+<style>
+  :root {
+    --bg: #f4f7fb; --card: #ffffff; --ink: #26313d; --muted: #6b7a8a;
+    --red: #e2553f; --blue: #3b7dd8; --amber: #f5a623; --green: #2ecc71;
+    --radius: 14px; --shadow: 0 2px 10px rgba(40,60,90,.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px; background: var(--bg); color: var(--ink);
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+    line-height: 1.55;
+  }
+  #app { max-width: 980px; margin: 0 auto; }
+  header h1 { margin: 0 0 6px; font-size: 26px; }
+  .problem {
+    background: var(--card); border-radius: var(--radius); padding: 16px 18px;
+    box-shadow: var(--shadow); font-size: 17px; margin-bottom: 14px;
+  }
+  .problem .hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+  .panel {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 10px; flex: 1 1 320px; min-width: 0;
+  }
+  .panel .cap { font-size: 13px; color: var(--muted); margin: 0 0 6px 4px; }
+  canvas { display: block; width: 100%; height: auto; }
+  #scene { height: 230px; }
+  #graph { height: 300px; }
+  .controls {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: var(--card); border-radius: var(--radius); padding: 14px 18px;
+    box-shadow: var(--shadow); margin-bottom: 14px;
+  }
+  #play {
+    border: 0; cursor: pointer; font-size: 16px; font-weight: 700;
+    padding: 10px 22px; border-radius: 999px; color: #fff; background: var(--green);
+    box-shadow: 0 3px 0 #1f9e55; transition: transform .06s;
+  }
+  #play:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f9e55; }
+  .slider-wrap { flex: 1 1 260px; min-width: 200px; }
+  .slider-wrap label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+  input[type=range] { width: 100%; accent-color: var(--blue); }
+  .readouts { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .card {
+    flex: 1 1 120px; background: var(--card); border-radius: var(--radius);
+    padding: 10px 12px; box-shadow: var(--shadow); text-align: center;
+  }
+  .card .r-label { font-size: 12px; color: var(--muted); }
+  .card .r-value { font-size: 20px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .status {
+    border-radius: var(--radius); padding: 12px 18px; margin-bottom: 14px;
+    font-size: 17px; font-weight: 700; border: 1px solid transparent;
+  }
+  .status.amber { background: #fdf3e0; color: #c47f17; border-color: #f5c97b; }
+  .status.green { background: #e6f7ec; color: #1e8e3e; border-color: #7fd79a; }
+  .status.blue  { background: #e8f1fc; color: #1b6fd8; border-color: #9cc3f0; }
+  .steps { background: var(--card); border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow); }
+  .steps h2 { margin: 0 0 10px; font-size: 18px; }
+  .steps ol { margin: 0; padding-left: 22px; }
+  .steps li { margin-bottom: 12px; font-size: 15px; }
+  .steps li b { color: var(--blue); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header><h1 id="lesson-title"></h1></header>
+  <section class="problem">
+    <div id="problem"></div>
+    <div class="hint" id="hint"></div>
+  </section>
+
+  <div class="grid">
+    <div class="panel">
+      <p class="cap" id="scene-cap">场景</p>
+      <canvas id="scene"></canvas>
+    </div>
+    <div class="panel">
+      <p class="cap">路程—时间图（s-t 图）</p>
+      <canvas id="graph"></canvas>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="play"></button>
+    <div class="slider-wrap">
+      <label id="slider-label"></label>
+      <input type="range" id="slider" min="0" max="20" step="0.1" value="0">
+    </div>
+  </div>
+
+  <div class="readouts" id="readouts"></div>
+  <div class="status" id="status"></div>
+
+  <section class="steps">
+    <h2>解题步骤</h2>
+    <ol id="steps"></ol>
+  </section>
+</div>
+
+<script id="lesson-data" type="application/json">__LESSON_DATA__</script>
+
+<script>
+(function () {
+  "use strict";
+  var DATA = JSON.parse(document.getElementById("lesson-data").textContent.trim());
+
+  var MATH = { abs: Math.abs, min: Math.min, max: Math.max, floor: Math.floor,
+               ceil: Math.ceil, sqrt: Math.sqrt, round: Math.round, PI: Math.PI };
+  var KEY_ORDER = ["t", "ranA", "ranB", "dist", "nA", "nB", "vA", "vB", "L",
+                   "gapDist", "tMeet", "span", "x0A", "x0B", "rate", "initGap"];
+  var _exprCache = Object.create(null);
+
+  function evalExpr(expr, vars) {
+    var fn = _exprCache[expr];
+    if (!fn) {
+      var names = Object.keys(MATH).concat(KEY_ORDER);
+      fn = new Function(...names.concat(['"use strict"; return (' + expr + ');']));
+      _exprCache[expr] = fn;
+    }
+    var args = Object.keys(MATH).map(function (k) { return MATH[k]; })
+      .concat(KEY_ORDER.map(function (k) { return vars[k]; }));
+    return fn.apply(null, args);
+  }
+
+  function mod(s, L) { return ((s % L) + L) % L; }
+
+  function motionState(t) {
+    var mo = DATA.motion;
+    var vA = mo.carA.v, vB = mo.carB.v;
+    var x0A = mo.carA.x0, x0B = mo.carB.x0;
+    var dirSign = mo.direction === "same" ? 1 : -1;
+    var sA = vA * t;
+    var sB = x0B + dirSign * vB * t;
+    var rate = mo.direction === "same" ? (vA - vB) : (vA + vB);
+    var initGap = mo.kind === "circular" ? mo.lap : x0B;
+    var gapDist = initGap - rate * t;
+    var tMeet = DATA.answer.tMeet;
+    var EPS = 1e-6;
+    var phase = t < tMeet - EPS ? "before" : (t <= tMeet + EPS ? "at" : "after");
+    var posA, posB, nA, nB;
+    if (mo.kind === "circular") {
+      var L = mo.lap;
+      posA = mod(sA, L); posB = mod(sB, L);
+      nA = Math.floor(sA / L); nB = Math.floor(sB / L);
+    } else { posA = sA; posB = sB; nA = 0; nB = 0; }
+    return { t: t, vA: vA, vB: vB, x0A: x0A, x0B: x0B, sA: sA, sB: sB,
+             rate: rate, initGap: initGap, gapDist: gapDist, tMeet: tMeet,
+             phase: phase, posA: posA, posB: posB, nA: nA, nB: nB };
+  }
+
+  function varsFor(st) {
+    return { t: st.t, ranA: st.vA * st.t, ranB: st.vB * st.t, dist: st.gapDist,
+             nA: st.nA, nB: st.nB, vA: st.vA, vB: st.vB, L: DATA.motion.lap || 0,
+             gapDist: st.gapDist, tMeet: st.tMeet, span: DATA.motion.span,
+             x0A: st.x0A, x0B: st.x0B, rate: st.rate, initGap: st.initGap };
+  }
+
+  /* ---------- 画布 DPR 适配 ---------- */
+  var sceneCv = document.getElementById("scene");
+  var graphCv = document.getElementById("graph");
+  var sceneCtx = sceneCv.getContext("2d");
+  var graphCtx = graphCv.getContext("2d");
+
+  function resize(cv, ctx) {
+    var dpr = window.devicePixelRatio || 1;
+    var r = cv.getBoundingClientRect();
+    cv.width = Math.round(r.width * dpr);
+    cv.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: r.width, h: r.height };
+  }
+  function resizeAll() { resize(sceneCv, sceneCtx); resize(graphCv, graphCtx); }
+  window.addEventListener("resize", function () { resizeAll(); render(t); });
+
+  var FONT = '"PingFang SC","Microsoft YaHei",sans-serif';
+
+  /* ---------- 箭头 / 车辆 小工具 ---------- */
+  function arrowHead(ctx, x1, y, x2) {
+    var a = 6, d = x2 - x1;
+    var dx = d === 0 ? 0 : (d > 0 ? 1 : -1);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(x1 + dx * a, y); ctx.lineTo(x1 - dx * 2, y - a); ctx.lineTo(x1 - dx * 2, y + a); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x2 - dx * a, y); ctx.lineTo(x2 + dx * 2, y - a); ctx.lineTo(x2 + dx * 2, y + a); ctx.closePath(); ctx.fill();
+  }
+
+  function drawCar(ctx, x, y, car) {
+    var w = 46, h = 26;
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,.18)"; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2;
+    ctx.fillStyle = car.color;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x - w / 2, y - h / 2, w, h, 8) : ctx.rect(x - w / 2, y - h / 2, w, h);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 14px " + FONT;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(car.name, x, y + 1);
+  }
+
+  function drawDot(ctx, cx, cy, R, ang, car, n) {
+    var x = cx + R * Math.cos(ang), y = cy + R * Math.sin(ang);
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,.18)"; ctx.shadowBlur = 4;
+    ctx.fillStyle = car.color;
+    ctx.beginPath(); ctx.arc(x, y, 12, 0, 2 * Math.PI); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 13px " + FONT;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(car.name, x, y + 1);
+    ctx.fillStyle = "#26313d"; ctx.font = "12px " + FONT; ctx.textBaseline = "bottom";
+    ctx.fillText(car.name + "·" + n + "圈", x, y - 16);
+  }
+
+  /* ---------- 线性道路渲染 ---------- */
+  function drawRoad(ctx, w, h, st) {
+    var mo = DATA.motion, span = mo.span;
+    var pad = 46, top = h * 0.42, bot = h * 0.70, mid = (top + bot) / 2;
+    function xOf(s) { return pad + (s / span) * (w - 2 * pad); }
+
+    ctx.fillStyle = "#e9eef3";
+    ctx.fillRect(pad, top, w - 2 * pad, bot - top);
+    ctx.strokeStyle = "#c7d2dd"; ctx.setLineDash([10, 8]); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(pad, mid); ctx.lineTo(w - pad, mid); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = "#8aa0b5"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(pad, top - 8); ctx.lineTo(pad, bot + 8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w - pad, top - 8); ctx.lineTo(w - pad, bot + 8); ctx.stroke();
+    ctx.fillStyle = "#5b6b7b"; ctx.font = "12px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText("起点", pad, bot + 12);
+    ctx.fillText("终点", w - pad, bot + 12);
+
+    if (st.phase === "before") {
+      var xa = xOf(st.posA), xb = xOf(st.posB);
+      var left = Math.min(xa, xb), right = Math.max(xa, xb);
+      if (right - left > 2) {
+        var yy = top - 16;
+        ctx.strokeStyle = "#f5a623"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(left, yy); ctx.lineTo(right, yy); ctx.stroke();
+        arrowHead(ctx, left, yy, right);
+        ctx.fillStyle = "#c47f17"; ctx.font = "bold 13px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+        ctx.fillText(Math.round(st.gapDist) + "米", (left + right) / 2, yy - 6);
+      }
+    }
+
+    drawCar(ctx, xOf(st.posA), mid, mo.carA);
+    drawCar(ctx, xOf(st.posB), mid, mo.carB);
+  }
+
+  /* ---------- 环形跑道渲染 ---------- */
+  function drawCircular(ctx, w, h, st) {
+    var mo = DATA.motion, L = mo.lap;
+    var cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 26;
+
+    ctx.strokeStyle = "#d7dee5"; ctx.lineWidth = 14; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2.5; ctx.setLineDash([5, 7]);
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
+    ctx.setLineDash([]);
+
+    var sx = cx + R, sy = cy;
+    ctx.fillStyle = "#5b6b7b";
+    ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = "#5b6b7b"; ctx.font = "12px " + FONT; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText("起点", sx + 9, sy);
+
+    var aA = (st.posA / L) * 2 * Math.PI;
+    var aB = (st.posB / L) * 2 * Math.PI;
+    drawDot(ctx, cx, cy, R, aA, mo.carA, st.nA);
+    drawDot(ctx, cx, cy, R, aB, mo.carB, st.nB);
+  }
+
+  /* ---------- s-t 图渲染 ---------- */
+  function clipSeg(x0, y0, x1, y1, xmin, ymin, xmax, ymax) {
+    var dx = x1 - x0, dy = y1 - y0, t0 = 0, t1 = 1;
+    var p = [-dx, dx, -dy, dy];
+    var q = [x0 - xmin, xmax - x0, y0 - ymin, ymax - y0];
+    for (var i = 0; i < 4; i++) {
+      if (p[i] === 0) { if (q[i] < 0) return null; }
+      else {
+        var r = q[i] / p[i];
+        if (p[i] < 0) { if (r > t1) return null; if (r > t0) t0 = r; }
+        else { if (r < t0) return null; if (r < t1) t1 = r; }
+      }
+    }
+    return [x0 + t0 * dx, y0 + t0 * dy, x0 + t1 * dx, y0 + t1 * dy];
+  }
+
+  function drawGraph(ctx, w, h, st) {
+    var g = DATA.graph;
+    var left = 52, right = 16, top = 14, bottom = 40;
+    var pw = w - left - right, ph = h - top - bottom;
+    var xs = pw / g.xMax, ys = ph / g.yMax;
+    function X(t) { return left + t * xs; }
+    function Y(s) { return top + ph - s * ys; }
+
+    ctx.strokeStyle = "#eef1f5"; ctx.lineWidth = 1;
+    for (var x = 0; x <= g.xMax + 1e-9; x += g.xStep) {
+      ctx.beginPath(); ctx.moveTo(X(x), top); ctx.lineTo(X(x), top + ph); ctx.stroke();
+    }
+    for (var y = 0; y <= g.yMax + 1e-9; y += g.yStep) {
+      ctx.beginPath(); ctx.moveTo(left, Y(y)); ctx.lineTo(left + pw, Y(y)); ctx.stroke();
+    }
+
+    ctx.strokeStyle = "#8aa0b5"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, top + ph); ctx.lineTo(left + pw, top + ph); ctx.stroke();
+
+    ctx.fillStyle = "#5b6b7b"; ctx.font = "11px " + FONT;
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (x = 0; x <= g.xMax + 1e-9; x += g.xStep) ctx.fillText(x, X(x), top + ph + 6);
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (y = 0; y <= g.yMax + 1e-9; y += g.yStep) ctx.fillText(y, left - 6, Y(y));
+
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText("时间 t（秒）", left + pw / 2, h - 2);
+    ctx.save(); ctx.translate(12, top + ph / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillText("路程（米）", 0, 0); ctx.restore();
+
+    if (g.laps) {
+      ctx.strokeStyle = "#d7dee5"; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      g.laps.forEach(function (L) {
+        if (L <= g.yMax) {
+          ctx.beginPath(); ctx.moveTo(left, Y(L)); ctx.lineTo(left + pw, Y(L)); ctx.stroke();
+          ctx.fillStyle = "#9aa8b5"; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+          ctx.fillText(L + "米(1圈)", left + 4, Y(L) - 2);
+        }
+      });
+      ctx.setLineDash([]);
+    }
+
+    g.lines.forEach(function (line) {
+      var seg = clipSeg(0, line.b, g.xMax, line.b + line.k * g.xMax, 0, 0, g.xMax, g.yMax);
+      if (!seg) return;
+      ctx.strokeStyle = line.color; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(X(seg[0]), Y(seg[1])); ctx.lineTo(X(seg[2]), Y(seg[3])); ctx.stroke();
+      ctx.fillStyle = line.color; ctx.font = "bold 12px " + FONT;
+      ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+      ctx.fillText(line.name, X(seg[2]) + 4, Y(seg[3]) - 2);
+    });
+
+    var m = g.meet;
+    ctx.fillStyle = "#2ecc71";
+    ctx.beginPath(); ctx.arc(X(m.t), Y(m.s), 5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = "#1e8e3e"; ctx.font = "bold 12px " + FONT;
+    ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+    ctx.fillText(m.label + " " + m.t + "s", X(m.t) + 8, Y(m.s) - 2);
+    if (m.mode === "lap") {
+      ctx.strokeStyle = "#f5a623"; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(X(m.t), Y(m.s)); ctx.lineTo(X(m.t), Y(m.s - DATA.motion.lap)); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.strokeStyle = "#f5a623"; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(X(st.t), top); ctx.lineTo(X(st.t), top + ph); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* ---------- 读数 / 状态 / 步骤 DOM ---------- */
+  var readoutEls = [];
+  var STATUS_COLORS = { amber: 1, green: 1, blue: 1 };
+  var gapLabel = DATA.readouts.filter(function (r) { return r.kind === "gap"; })[0];
+
+  function buildReadouts() {
+    var el = document.getElementById("readouts");
+    el.innerHTML = "";
+    readoutEls = [];
+    DATA.readouts.forEach(function (r) {
+      var card = document.createElement("div");
+      card.className = "card";
+      var lab = document.createElement("div"); lab.className = "r-label"; lab.textContent = r.label;
+      var val = document.createElement("div"); val.className = "r-value";
+      if (r.color) val.style.color = r.color;
+      card.appendChild(lab); card.appendChild(val);
+      el.appendChild(card);
+      readoutEls.push({ r: r, val: val, lab: lab });
+    });
+  }
+
+  function fmt(v, decimals) {
+    if (decimals === undefined) return String(Math.round(v));
+    return v.toFixed(decimals);
+  }
+
+  function gapInfo(st) {
+    var mo = DATA.motion, g = st.gapDist, lead = Math.abs(g);
+    if (st.phase === "at") return { label: mo.meetWord, value: "0 米" };
+    var same = mo.direction === "same";
+    if (same && mo.kind === "linear") {
+      return g >= 0 ? { label: "乙领先甲", value: Math.round(lead) + " 米" }
+                    : { label: "甲领先乙", value: Math.round(lead) + " 米" };
+    }
+    if (same && mo.kind === "circular") {
+      return g >= 0 ? { label: "还需多跑", value: Math.round(lead) + " 米" }
+                    : { label: "甲已领先", value: Math.round(lead) + " 米" };
+    }
+    return g >= 0 ? { label: gapLabel ? gapLabel.label : "相距", value: Math.round(lead) + " 米" }
+                  : { label: "已错过", value: Math.round(lead) + " 米" };
+  }
+
+  function updateReadouts(st) {
+    var vars = varsFor(st);
+    readoutEls.forEach(function (item) {
+      var r = item.r;
+      if (r.kind === "expr") {
+        var v = evalExpr(r.expr, vars);
+        item.val.textContent = fmt(v, r.decimals) + (r.unit ? " " + r.unit : "");
+      } else if (r.kind === "gap") {
+        var gi = gapInfo(st);
+        item.lab.textContent = gi.label;
+        item.val.textContent = gi.value;
+      } else if (r.kind === "laps") {
+        item.val.textContent = "甲 " + st.nA + " · 乙 " + st.nB;
+      } else if (r.kind === "answer") {
+        item.val.textContent = r.value;
+      }
+    });
+  }
+
+  function updateStatus(st) {
+    var el = document.getElementById("status");
+    var s = DATA.status[st.phase];
+    el.className = "status " + s.color;
+    el.textContent = s.text;
+  }
+
+  function buildSteps() {
+    var el = document.getElementById("steps");
+    el.innerHTML = "";
+    DATA.steps.forEach(function (s) {
+      var li = document.createElement("li");
+      var b = document.createElement("b"); b.textContent = s.title + "：";
+      li.appendChild(b);
+      li.appendChild(document.createTextNode(s.content));
+      el.appendChild(li);
+    });
+  }
+
+  /* ---------- 播放 / 滑块 ---------- */
+  var playBtn = document.getElementById("play");
+  var slider = document.getElementById("slider");
+  var tMax = DATA.motion.tMax;
+  var t = 0, playing = false, last = 0;
+
+  slider.max = tMax;
+  slider.value = t;
+  playBtn.textContent = DATA.ui.play;
+  document.getElementById("slider-label").textContent = DATA.ui.sliderLabel;
+
+  function setPlaying(v) {
+    playing = v;
+    playBtn.textContent = playing ? DATA.ui.pause : DATA.ui.play;
+    last = performance.now();
+  }
+
+  playBtn.addEventListener("click", function () {
+    if (!playing && t >= tMax - 1e-9) { t = 0; slider.value = 0; }
+    setPlaying(!playing);
+  });
+
+  slider.addEventListener("input", function () {
+    setPlaying(false);
+    t = parseFloat(slider.value);
+    render(t);
+  });
+
+  /* ---------- 渲染 ---------- */
+  function render(tt) {
+    var st = motionState(tt);
+    var sw = sceneCv.getBoundingClientRect().width;
+    var sh = sceneCv.getBoundingClientRect().height;
+    var gw = graphCv.getBoundingClientRect().width;
+    var gh = graphCv.getBoundingClientRect().height;
+    sceneCtx.clearRect(0, 0, sw, sh);
+    graphCtx.clearRect(0, 0, gw, gh);
+    if (DATA.motion.kind === "circular") drawCircular(sceneCtx, sw, sh, st);
+    else drawRoad(sceneCtx, sw, sh, st);
+    drawGraph(graphCtx, gw, gh, st);
+    updateReadouts(st);
+    updateStatus(st);
+  }
+
+  function loop(now) {
+    if (playing) {
+      var dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      t += dt;
+      if (t >= tMax) { t = tMax; setPlaying(false); }
+      slider.value = t;
+    }
+    render(t);
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- 初始化 ---------- */
+  document.getElementById("lesson-title").textContent = DATA.lesson.title;
+  document.getElementById("problem").textContent = DATA.lesson.problem;
+  document.getElementById("hint").textContent = DATA.lesson.hint;
+  var sceneCap = document.getElementById("scene-cap");
+  sceneCap.textContent = DATA.motion.kind === "circular" ? "环形跑道（周长 " + DATA.motion.lap + " 米）" : "道路（全长 " + DATA.motion.span + " 米）";
+
+  buildReadouts();
+  buildSteps();
+  resizeAll();
+  render(0);
+  last = performance.now();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
