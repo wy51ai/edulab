@@ -8,6 +8,7 @@ triage/
 plan/
 docs/
 output/
+dist/
 .idea/
 .vscode/
 *.log
