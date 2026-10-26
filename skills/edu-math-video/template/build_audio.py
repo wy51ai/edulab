@@ -40,9 +40,10 @@ def _find_up(name):
 
 
 def _find_ff():
-    d = _find_up("node_modules/ffmpeg-static/ffmpeg")  # shared node_modules at the workspace root
-    if d:
-        return os.path.join(d, "node_modules/ffmpeg-static/ffmpeg")
+    for ff_name in ("ffmpeg", "ffmpeg.exe"):  # ffmpeg-static names it ffmpeg.exe on Windows
+        d = _find_up(f"node_modules/ffmpeg-static/{ff_name}")  # shared node_modules at the workspace root
+        if d:
+            return os.path.join(d, "node_modules", "ffmpeg-static", ff_name)
     if shutil.which("ffmpeg"):
         return shutil.which("ffmpeg")
     raise SystemExit("ffmpeg not found: run `npm install playwright@1.49 ffmpeg-static` in the workspace root.")
