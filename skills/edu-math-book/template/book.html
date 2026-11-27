@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>@@TITLE@@</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,400;1,500&family=Caveat:wght@500;700&family=Long+Cang&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<style>
+/*@@CSS@@*/
+</style>
+</head>
+<body>
+<div class="topbar"><span id="topbarL"></span><span id="topbarR">拖动模型旋转 · 点击题号看演示 · Esc 收起</span></div>
+
+<!--INTRO:BEGIN--><canvas id="gl"></canvas><!--INTRO:END-->
+<div class="viewport" id="vp">
+ <div class="cam" id="cam">
+  <div class="world" id="world">
+    <div class="room" id="room"></div>
+    <div class="desk"></div>
+    <svg class="sun" id="sun" viewBox="0 0 3800 2800"></svg>
+    <div class="mat"></div>
+    <div class="prop" id="pSticky" style="left:1330px;top:-380px;transform:rotateZ(7deg)"></div>
+    <div class="prop" id="pEraser" style="left:730px;top:420px;transform:rotateZ(-10deg)"></div>
+    <div class="easel" id="easel">
+    <div class="easel-sh"></div>
+    <div class="board" id="board">
+    <div class="sheet" id="sheet">
+      <div class="sh-in" id="shIn"></div>
+      <div class="slider" id="slider">
+        <div class="row"><span id="sliderL"></span><span class="deg" id="sliderR"></span></div>
+        <input type="range" id="range">
+      </div>
+      <div class="sh-hint" id="shHint">悬停彩色字母，图上对应的线和面会亮起来</div>
+      <div class="pen-sh" id="penSh"><i></i></div>
+      <div class="pen" id="pen"><div class="ax" id="penAx"></div></div>
+    </div>
+    </div>
+    </div>
+    <div class="prop" id="pMug" style="left:-840px;top:-560px"></div>
+    <div class="prop" id="pClock" style="left:-80px;top:-640px;transform:rotateZ(8deg)"></div>
+
+    <div class="book">
+      <div class="cover"></div>
+      <div class="cover-e f"></div><div class="cover-e l"></div><div class="cover-e r"></div>
+      <div class="edge-t"></div>
+      <div class="edge-s" style="left:14px"></div><div class="edge-s" style="left:1246px"></div>
+      <div class="edge"></div>
+      <div class="ribbon"></div>
+      <div class="pages">
+        <svg class="sun on-pages" id="sunPages" viewBox="1084 994 1232 812"></svg>
+        <section class="page left"><div class="content" id="leftPage"></div></section>
+        <section class="page right">
+          <div class="flatfig" id="flatfig">
+            <svg id="flat"></svg>
+            <div class="fboard" id="fboard" hidden></div>
+            <div class="hand drag-hint">拖我转一转 ↻</div>
+          </div>
+          <div class="content" id="rightPage"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+ </div>
+</div>
+<svg id="pop"></svg>
+<div class="rays"></div>
+<canvas id="dust"></canvas>
+<div class="grade"></div>
+<div class="light"></div>
+
+<!--INTRO:BEGIN-->
+<div class="say" id="say"></div>
+<audio id="bgm" src="cmbg.mp3" loop preload="auto"></audio>
+<button class="sound" id="soundBtn" aria-label="开关声音">♪ 声音开</button>
+<div class="intro-ui" id="introUi">
+  <button class="start" id="introStart">▶ 点击开始</button>
+  <button class="skip" id="introSkip">跳过 ›</button>
+</div>
+<!--INTRO:END-->
+
+<div class="dock">
+  <div class="g-normal">
+    <span class="dots" id="dockDots"><i></i><i></i><i></i></span>
+    <span class="msg" id="dockMsg"></span>
+    <button id="dockGo">开始演示 ▶</button>
+    <!--INTRO:BEGIN--><button id="toClass" class="ghost" title="回到教室，重新听她提问">↺ 回到教室</button><!--INTRO:END-->
+  </div>
+  <div class="g-demo">
+    <div class="tabs" id="tabs"></div>
+    <span class="sdots" id="mDots"></span>
+    <button id="prev">←</button><button id="next">下一步 →</button>
+    <button class="x" id="close" aria-label="收起演示">✕</button>
+  </div>
+</div>
+
+<script>
+/*@@CORE@@*/
+</script>
+<script>
+/*@@LESSON@@*/
+</script>
+<script>
+// the engine lives in its own function scope, so names in lesson.js can never collide with it
+(() => {
+/*@@RENDERERS@@*/
+/*@@PROPS@@*/
+/*@@SCENE@@*/
+})();
+</script>
+<!--INTRO:BEGIN-->
+<script src="tex/textures.js"></script>
+<script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="module">
+/*@@INTRO_GL@@*/
+</script>
+<!--INTRO:END-->
+</body>
+</html>

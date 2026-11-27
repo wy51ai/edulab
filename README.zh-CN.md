@@ -246,6 +246,19 @@ python3 build_audio.py --preview && node render.mjs motion && node render.mjs st
 python3 build_audio.py && node render.mjs video 6
 ```
 
+## 技能：edu-math-book
+
+把**任意一道高中数学题**做成"书桌上翻开的习题册"互动网页：左页印着题面、关键词、设问和"先猜再掀纸片"的预测题，右页是铅笔素描图；点"看演示"后图形从书页立起来，钢笔在旁边草稿纸上逐字写出推理链，彩色符号悬停联动图形，可拖滑块做参数实验。可选**教室开场**（同学视频发问 + BGM + WebGL 教室，镜头落到课桌上）。
+
+三种渲染器覆盖全部高中数学：`solid`（多面体自动推棱和可见性 + 圆柱/圆锥/球）、`plane`（函数/导数图像、圆锥曲线、平面几何、统计柱状图，演示时像立体贺卡一样立起）、`none`（数列、不等式、计数概率等无图题，右页是公式板）。每道题只写一个 `lesson.js`，壳全在模板里。
+
+```bash
+python3 skills/edu-math-book/scripts/generate.py lesson.js out/index.html     # 加 --intro 带教室开场
+node skills/edu-math-book/scripts/check.mjs out/index.html                   # 截图每一步 + 报错/校验告警
+```
+
+范例见 `skills/edu-math-book/examples/`（直三棱柱、三棱锥 + 开场、三次函数零点、数列）。
+
 ## 工作原理
 
 1. **得到 problem spec** —— 三入口归一成结构化描述（几何体类型与尺寸、已知条件、所求、语言）。
@@ -305,13 +318,20 @@ edulab/
     │   ├── scripts/
     │   ├── examples/laser-curvature/  # 几何光学示例
     │   └── reference/
-    └── edu-chem-video/          # 化学题讲解视频 — GLM-TTS + 黑板动画 → 网页预览（可导出 MP4）
+    ├── edu-chem-video/          # 化学题讲解视频 — GLM-TTS + 黑板动画 → 网页预览（可导出 MP4）
+    │   ├── SKILL.md
+    │   ├── template/            # 黑板主题（engine.js · chem.js · anim.js）
+    │   ├── shared/
+    │   ├── scripts/             # 另有 chem_check.py —— 配平与守恒核对
+    │   ├── examples/equilibrium/    # 化学平衡 / 三段式示例
+    │   └── reference/
+    └── edu-math-book/           # 书桌翻书互动试卷 — 高中数学全题型（solid / plane / none）+ 可选教室开场
         ├── SKILL.md
-        ├── template/            # 黑板主题（engine.js · chem.js · anim.js）
-        ├── shared/
-        ├── scripts/             # 另有 chem_check.py —— 配平与守恒核对
-        ├── examples/equilibrium/    # 化学平衡 / 三段式示例
-        └── reference/
+        ├── template/            # 壳：book.html · core.js · renderers.js · props.js · scene.js · intro_gl.js
+        ├── assets/intro/        # 开场素材（视频、BGM、木纹贴图），仅 --intro 时拷贝
+        ├── scripts/             # generate.py · check.mjs
+        ├── examples/            # solid_prism · solid_pyramid · plane_function · none_sequence
+        └── references/          # lesson-schema.md · renderers.md · pedagogy.md
 ```
 
 ## 扩展

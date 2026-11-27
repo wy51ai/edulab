@@ -1,0 +1,322 @@
+:root{
+  --ink:#2b2a28; --ink2:#6b675f; --paper:#fbf9f3; --paper2:#f4f0e6;
+  --cover:#1f4f8f; --cover2:#163b6e; --navy:#183c6b;
+  --red:#b8432f; --violet:#7c5cff; --blue:#2f7bf5; --orange:#f08a1c; --pink:#e8458b; --green:#10a37f;
+  --serif:"Noto Serif SC","Songti SC",serif; --math:"EB Garamond","Times New Roman",serif;
+  --hand:"Ma Shan Zheng","Kaiti SC","STKaiti",cursive;
+}
+*{box-sizing:border-box}
+html,body{margin:0; height:100%}
+body{font-family:var(--serif); color:var(--ink); background:#3a2618; overflow:hidden}
+.m{font-family:var(--math); font-style:italic; font-size:1.08em; white-space:nowrap}
+.m sub{font-size:.68em; font-style:normal}
+
+/* ---------- camera & world (transforms are driven from JS so the overlay can match them) ---------- */
+.viewport{position:fixed; inset:0; perspective:1900px; perspective-origin:50% 18%; overflow:hidden}
+.cam{position:absolute; left:50%; top:57%; width:0; height:0; transform-style:preserve-3d}
+.world{position:absolute; transform-style:preserve-3d}
+.world > *{position:absolute; transform-style:preserve-3d}
+
+.desk{width:4400px; height:3000px; left:-2200px; top:-1700px; transform:translateZ(-3px);
+  background:
+    radial-gradient(1000px 700px at 60% 42%, rgba(255,214,150,.2), transparent 70%),
+    repeating-linear-gradient(180deg, transparent 0 358px, rgba(20,10,4,.55) 358px 359.5px, rgba(255,220,180,.06) 359.5px 361px),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='.0022 .055' numOctaves='4' seed='5' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .14  0 0 0 0 .07  0 0 0 0 .025  0 0 0 1.25 -.42'/></filter><rect width='100%' height='100%' filter='url(%23w)'/></svg>"), url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.02 .9' numOctaves='2' seed='9' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .1  0 0 0 0 .05  0 0 0 0 .02  0 0 0 .9 -.32'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"),
+    linear-gradient(90deg,#6c442a,#7c4f31 30%,#6d452a 55%,#835431 80%,#6a432a);
+}
+.mat{width:1720px; height:1080px; left:-860px; top:-520px; transform:translateZ(-1px); border-radius:22px;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='l'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23l)'/></svg>"), radial-gradient(1200px 700px at 55% 40%, #3a4140, #252a2a 70%);
+  box-shadow:0 2px 0 #151817, 0 30px 60px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.07), inset 0 0 40px rgba(0,0,0,.35)}
+.mat::after{content:""; position:absolute; inset:14px; border:1.5px dashed rgba(220,200,160,.35); border-radius:14px}
+
+.prop{width:0; height:0}
+.g3{position:absolute; left:0; top:0; transform-style:preserve-3d}
+.f3{position:absolute; left:0; top:0; transform-origin:0 0}
+.f2{position:absolute}
+.sh3{position:absolute; pointer-events:none}
+.steam{position:absolute; pointer-events:none}
+.steam i{position:absolute; bottom:-10px; left:30px; width:40px; height:130px; border-radius:50%; background:radial-gradient(ellipse 40% 50% at 50% 60%, rgba(255,255,255,.75), rgba(255,255,255,0) 70%); filter:blur(8px); opacity:0; animation:steam 5.5s ease-in infinite}
+.steam i:nth-child(2){left:10px; animation-delay:1.4s; animation-duration:6.2s}
+.steam i:nth-child(3){left:52px; animation-delay:2.8s}
+.steam i:nth-child(4){left:28px; animation-delay:4.1s; animation-duration:6.6s}
+@keyframes steam{0%{opacity:0; transform:translate(0,30px) scale(.5,.6)} 25%{opacity:.85} 60%{transform:translate(10px,-50px) scale(1.1,1) skewX(-10deg)} 100%{opacity:0; transform:translate(-14px,-130px) scale(1.6,1.2) skewX(16deg)}}
+/* vintage alarm clock */
+.bb{position:absolute; pointer-events:none}
+.dial{position:absolute; border-radius:50%; overflow:hidden}
+.dial .num{position:absolute; width:30px; margin-left:-15px; text-align:center; font-family:var(--math); font-size:15px; font-weight:500; color:#2a2420; letter-spacing:-.02em}
+.dial .brand{position:absolute; left:0; right:0; text-align:center; font-family:var(--math); font-size:7.5px; letter-spacing:.32em; color:#6b5a3a}
+.hand{position:absolute; left:50%; bottom:50%; transform-origin:50% 100%; border-radius:3px 3px 1px 1px; transition:transform .28s cubic-bezier(.4,2.2,.55,1)}
+.slv{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; font-family:var(--math); font-size:10px; line-height:1.25; letter-spacing:.22em; color:#e8eef8}
+
+/* ---------- book ---------- */
+.book{width:1260px; height:840px; left:-630px; top:-420px}
+.book > *{position:absolute; transform-style:preserve-3d}
+.cover{inset:0; border-radius:8px 8px 10px 10px;
+  background:repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 2px, transparent 2px 5px), linear-gradient(180deg,var(--cover),var(--cover2));
+  box-shadow:0 40px 70px rgba(0,0,0,.55), 0 10px 20px rgba(0,0,0,.35)}
+.cover::after{content:""; position:absolute; left:50%; top:0; bottom:0; width:20px; transform:translateX(-50%); background:linear-gradient(90deg,transparent,rgba(0,0,0,.35),transparent)}
+.edge{left:14px; right:14px; top:826px; height:16px; transform-origin:top; transform:rotateX(90deg);
+  background:linear-gradient(180deg,#fbf8ef 0%,#efe8d8 30%,#f6f1e5 55%,#e4dac6 100%)}
+.edge-s{top:14px; width:16px; height:812px; transform-origin:0 0; transform:rotateY(-90deg); background:linear-gradient(90deg,#e4dac6 0%,#f6f1e5 45%,#efe8d8 70%,#fbf8ef 100%)}
+.edge-t{left:14px; top:14px; width:1232px; height:16px; transform-origin:0 0; transform:rotateX(90deg); background:linear-gradient(180deg,#fbf8ef 0%,#efe8d8 30%,#f6f1e5 55%,#e4dac6 100%)}
+.cover-e{background:linear-gradient(180deg,#123461,#0d2748)}
+.cover-e.f{left:0; top:840px; width:1260px; height:6px; transform-origin:0 0; transform:translateZ(-6px) rotateX(90deg)}
+.cover-e.l{left:0; top:0; width:6px; height:840px; transform-origin:0 0; transform:translateZ(-6px) rotateY(-90deg)}
+.cover-e.r{left:1260px; top:0; width:6px; height:840px; transform-origin:0 0; transform:translateZ(-6px) rotateY(-90deg)}
+/* surfaces with decorative ::after layers render flat, so the overlay never z-fights its own surface */
+.book > .edge, .book > .cover, .world > .mat{transform-style:flat}
+.edge::after{content:""; position:absolute; left:50%; top:0; bottom:0; width:24px; transform:translateX(-50%); background:linear-gradient(90deg,transparent,rgba(0,0,0,.25),transparent)}
+.ribbon{left:618px; top:830px; width:16px; height:70px; transform:translateZ(1px); background:linear-gradient(90deg,#14325d,#24508f,#14325d); clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%)}
+.pages{left:14px; top:14px; width:1232px; height:812px; transform:translateZ(16px); display:flex}
+.page{position:relative; width:616px; height:812px; transform-style:preserve-3d; --noise:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42  0 0 0 0 .36  0 0 0 0 .26  0 0 0 .085 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.page.left{border-radius:3px 0 0 6px; background:var(--noise), linear-gradient(to left, rgba(0,0,0,.17), rgba(0,0,0,0) 8%), linear-gradient(to right, rgba(0,0,0,.05), transparent 3%), var(--paper)}
+.page.right{border-radius:0 3px 6px 0; background:var(--noise), linear-gradient(to right, rgba(0,0,0,.17), rgba(0,0,0,0) 8%), linear-gradient(to left, rgba(0,0,0,.05), transparent 3%), var(--paper)}
+.content{position:absolute; inset:0; padding:26px 54px 30px 60px; transition:opacity .7s; transform-style:preserve-3d}
+.right .content{padding:0 44px 30px 46px; pointer-events:none}
+body.demo .content{opacity:.12; pointer-events:none}
+body.demo .right .content{opacity:.5}
+
+/* ---------- printed page typography ---------- */
+.rh{display:flex; justify-content:space-between; font-family:var(--math); font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:#a39b8c; padding-bottom:7px; border-bottom:.5px solid #ddd3bf}
+.eyebrow{margin-top:18px; text-align:center; font-family:var(--math); font-size:11px; letter-spacing:.34em; color:var(--red); text-transform:uppercase}
+h1{margin:3px 0 0; text-align:center; font-weight:900; font-size:31px; letter-spacing:.07em; color:#1f1e1c}
+.sub{text-align:center; font-family:var(--math); font-style:italic; color:#958e80; font-size:14.5px; margin-top:1px}
+.stem{position:relative; margin:14px 0 0; padding:8px 4px 8px 16px; border-left:2px solid #1f1e1c; font-size:14.8px; line-height:1.78; color:#2b2a28}
+.stem .no{position:absolute; left:-34px; top:4px; font-family:var(--math); font-size:26px; line-height:1; color:var(--red); font-style:italic}
+.keyrow{display:flex; align-items:center; gap:16px; margin-top:14px}
+.scribble{flex:none; width:104px; font-family:var(--hand); font-size:15.5px; line-height:1.3; color:#2a4a8a; transform:rotate(-5deg); opacity:.9}
+.keybox{flex:1; position:relative; border:1px solid #d6ccb6; padding:9px 16px 8px; text-align:center; background:rgba(255,255,255,.35)}
+.keybox::before,.keybox::after{content:""; position:absolute; width:9px; height:9px; border:1.5px solid #1f1e1c}
+.keybox::before{left:-3px; top:-3px; border-right:0; border-bottom:0}
+.keybox::after{right:-3px; bottom:-3px; border-left:0; border-top:0}
+.keybox .f{font-family:var(--math); font-size:25px; letter-spacing:.04em}
+.keybox .c{font-size:10.5px; color:#8f887a; font-style:italic; letter-spacing:.06em}
+.lbl{font-family:var(--math); font-size:10px; letter-spacing:.3em; color:var(--red); text-transform:uppercase; margin:13px 0 4px; display:flex; align-items:center; gap:10px}
+.lbl::after{content:""; flex:1; height:.5px; background:#e0d7c4}
+.kw{display:grid; grid-template-columns:auto 1fr; gap:1px 12px; margin:0; font-size:12.8px; line-height:1.6}
+.kw dt{font-weight:700; color:#1f1e1c}
+.kw dd{margin:0; color:#5d584f}
+.q{display:flex; align-items:baseline; gap:9px; padding:4px 8px; margin:0 -8px; border-radius:4px; cursor:pointer; font-size:14.8px; line-height:1.62}
+.q .n{flex:none; font-family:var(--math); font-style:italic; color:var(--red); font-size:16px}
+.q .t{background:linear-gradient(transparent 58%, rgba(255,206,70,.5) 58%, rgba(255,206,70,.5) 90%, transparent 90%) no-repeat 0 0/0% 100%; transition:background-size .55s ease; -webkit-box-decoration-break:clone; box-decoration-break:clone}
+.q:hover .t{background-size:100% 100%}
+.q .lead{flex:1; min-width:18px; border-bottom:1.5px dotted #c9bea6; transform:translateY(-5px)}
+.q .go{flex:none; font-family:var(--math); font-style:italic; color:var(--navy); font-size:14px; letter-spacing:.02em; transition:color .2s}
+.q .go b{display:inline-block; transition:transform .25s}
+.q:hover .go{color:var(--violet)}
+.q:hover .go b{transform:translate(3px,-3px)}
+.pq{font-size:14.5px; margin-bottom:6px}
+.opts{display:flex; gap:22px; padding-left:2px}
+.opt{display:flex; align-items:center; gap:8px; background:none; border:0; padding:2px 0; cursor:pointer; font-family:var(--math); font-size:17px; color:var(--ink); position:relative}
+.opt i{width:14px; height:14px; border:1.4px solid #1f1e1c; border-radius:1px 2px 1px 3px; transform:rotate(-2deg); position:relative}
+.opt.sel i::after{content:"✓"; position:absolute; left:-1px; top:-12px; font-family:var(--hand); font-size:22px; color:#2a4a8a}
+.opt.right span{border-radius:50%; box-shadow:0 0 0 2px var(--green); padding:0 5px}
+.opt.wrong span{text-decoration:line-through; text-decoration-color:#c0392b; text-decoration-thickness:2px}
+
+/* ---------- the paper flap ---------- */
+.flaprow{display:flex; gap:20px; align-items:flex-end; margin-top:16px; transform-style:preserve-3d}
+.flap{position:relative; flex:none; width:344px; height:110px; transform-style:preserve-3d}
+.flap-in{position:absolute; inset:0; padding:9px 16px; background:#fffaf0; border:1px dashed #d9c79b; font-size:13px; line-height:1.55; color:#3b3833}
+.flap-in .tagline{font-family:var(--math); font-size:10px; letter-spacing:.3em; color:var(--red); text-transform:uppercase}
+.flap-in .big{float:right; font-family:var(--math); font-size:40px; line-height:1; color:var(--ink); margin:2px 6px 0 10px; position:relative}
+.flap-in .big::after{content:""; position:absolute; inset:-4px -10px; border:2px solid #c0392b; border-radius:50% 46% 52% 44%; transform:rotate(-8deg)}
+.flap-in button{border:0; background:none; color:var(--navy); font:inherit; font-family:var(--math); font-style:italic; font-size:14px; cursor:pointer; padding:0; text-decoration:underline; text-underline-offset:3px}
+.flap-shadow{position:absolute; left:6px; right:6px; top:0; height:110px; transform-origin:50% 0; background:rgba(50,35,10,.42); filter:blur(7px); opacity:0; pointer-events:none}
+.seg{position:absolute; left:0; right:0; transform-origin:50% 0; transform-style:preserve-3d}
+.s1{top:0; height:58px; transform:translateZ(1px) rotateX(var(--a1,0deg)); cursor:grab}
+.s2{top:100%; height:52px; transform:rotateX(var(--a2,0deg))}
+.face{position:absolute; inset:0; backface-visibility:hidden; background:var(--noise), linear-gradient(180deg,#fbf3df,#f7ecd2)}
+.face.f::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(70,45,10,0) 30%, rgba(70,45,10,var(--shade,0))); pointer-events:none}
+.s1>.face.f{border:1px solid #e0cc9c; border-bottom:0; padding:11px 16px 0; box-shadow:0 -1px 0 rgba(255,255,255,.6) inset}
+.s2>.face.f{border:1px solid #e0cc9c; border-top:0; padding:2px 16px 0; box-shadow:0 3px 6px -3px rgba(60,40,10,.35)}
+.face.b{transform:rotateX(180deg); background:var(--noise), linear-gradient(0deg,#efe3c4,#e8dab7); border:1px solid #d9c592}
+.s1 > .face.b::before{content:"答 案 在 下 面"; position:absolute; left:0; right:0; top:22px; text-align:center; font-size:12px; letter-spacing:.3em; color:rgba(90,70,30,.28); transform:scaleY(-1)}
+.flap .why{font-family:var(--math); color:#c0392b; font-weight:500; font-size:11px; letter-spacing:.3em}
+.flap .ft{font-weight:900; font-size:17px; letter-spacing:.04em; margin-top:1px}
+.flap .fs{font-family:var(--math); font-style:italic; color:#8a8172; font-size:13px}
+.flap .lift{position:absolute; right:14px; top:-24px; font-family:var(--hand); font-size:16px; color:#2a4a8a; transform:rotate(-6deg)}
+.flap .corner{position:absolute; right:0; bottom:0; width:22px; height:22px; background:linear-gradient(135deg, transparent 50%, #e6d6ad 50%, #fff6df 75%); box-shadow:-1px -1px 2px rgba(0,0,0,.12)}
+.tape{position:absolute; left:50%; top:-10px; width:92px; height:22px; transform:translateX(-50%) translateZ(2px) rotate(-2.5deg); background:linear-gradient(180deg,rgba(244,236,206,.88),rgba(232,222,186,.85));
+  clip-path:polygon(0 8%,4% 0,9% 10%,14% 0,20% 8%,80% 6%,86% 0,91% 9%,96% 0,100% 10%,100% 92%,95% 100%,90% 90%,84% 100%,78% 92%,20% 94%,14% 100%,8% 90%,3% 100%,0 90%); box-shadow:0 1px 2px rgba(0,0,0,.1); pointer-events:none}
+.challenge{font-size:12.5px; line-height:1.55; color:#57524a; padding-bottom:4px}
+.challenge .lbl{margin:0 0 3px}
+.challenge .lbl::after{display:none}
+.folio{position:absolute; bottom:16px; font-family:var(--math); font-size:13px; color:#9a9386}
+.left .folio{left:44px}.right .folio{right:44px}
+
+/* ---------- right page ---------- */
+.right .content .spacer{height:516px}
+.cap{display:flex; justify-content:space-between; align-items:baseline; gap:16px; font-size:12.5px; color:#7d776b; border-top:.5px solid #ddd3bf; padding-top:8px}
+.cap .fig{font-family:var(--math); font-style:italic; color:var(--red); letter-spacing:.06em; margin-right:6px}
+.method span{margin-left:10px; font-family:var(--math); font-style:italic}
+.method .on{border:1.4px solid var(--ink); border-radius:50% 46% 52% 44%; padding:1px 8px; color:var(--ink)}
+.cap-main{margin-top:6px; font-family:var(--math); font-style:italic; font-size:15px; color:#2b2a28}
+.tags{display:flex; gap:12px; margin-top:14px}
+.tag{flex:1; background:#fffefa; border:1px solid #d9cfba; border-radius:2px; padding:8px 12px 9px; font-size:12.5px; line-height:1.65; box-shadow:0 8px 16px -10px rgba(40,30,10,.35)}
+.tag b{display:block; font-family:var(--math); font-size:10px; letter-spacing:.3em; color:var(--red); text-transform:uppercase; font-weight:500; margin-bottom:2px}
+.tag .sw{display:inline-block; width:14px; height:3px; border-radius:2px; vertical-align:middle; margin-right:6px}
+.tag .pl{display:inline-block; width:12px; height:9px; vertical-align:middle; margin-right:6px; border:1px solid; opacity:.8}
+.flatfig{position:absolute; left:28px; top:20px; width:560px; height:490px}
+#flat{width:100%; height:100%; display:block; touch-action:none; cursor:grab}
+#flat.grab{cursor:grabbing}
+.hand{font-family:var(--hand); color:#2a4a8a; position:absolute; font-size:16px; pointer-events:none}
+.drag-hint{right:10px; top:18px; transform:rotate(6deg)}
+
+/* ---------- scratch paper: lies flat on the desk beside the book, a pen writes each step ---------- */
+.easel{left:560px; top:-650px; width:620px; height:770px; transform-origin:50% 100%; transform:rotateZ(-4deg) scale3d(.7,.7,.7)}
+.easel-sh{position:absolute; left:10px; right:-30px; top:430px; height:340px; transform:translateZ(.5px) skewX(-18deg); transform-origin:50% 100%;
+  background:linear-gradient(0deg, rgba(10,6,2,.55), rgba(10,6,2,0)); filter:blur(16px); opacity:var(--pop,0); pointer-events:none}
+.board{position:absolute; inset:0; transform-origin:50% 100%; transform-style:preserve-3d; border-radius:12px;
+  transform:translateZ(3px) rotateX(calc(var(--pop,0) * -64deg));
+  background:repeating-linear-gradient(92deg, rgba(0,0,0,.035) 0 2px, transparent 2px 9px), linear-gradient(170deg,#a57a4f,#7f5737);
+  box-shadow:inset 0 0 0 1px rgba(255,230,190,.25), inset 0 -6px 10px rgba(0,0,0,.25), 0 6px 14px rgba(0,0,0,.35)}
+.sheet{position:absolute; left:30px; top:44px; width:560px; height:700px; border-radius:2px; transform-style:preserve-3d; pointer-events:none;
+  transform:translateZ(1.5px) rotateZ(-.6deg); --noise:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42  0 0 0 0 .36  0 0 0 0 .26  0 0 0 .085 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background:var(--noise),
+    linear-gradient(90deg, transparent 60px, rgba(214,74,74,.45) 60px 61.5px, transparent 61.5px),
+    repeating-linear-gradient(180deg, transparent 0 43px, rgba(70,110,180,.22) 43px 44px) 0 30px / 100% 616px no-repeat,
+    linear-gradient(180deg,#fefcf6,#faf6ea);
+  box-shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 18px rgba(0,0,0,.25), 0 30px 50px rgba(0,0,0,.3)}
+body.demo .sheet{pointer-events:auto}
+.sh-in{padding:30px 22px 0 76px; line-height:44px; color:#1b2a4a; font-family:"Long Cang",var(--hand)}
+.sh-head{font-family:var(--math); font-size:13px; letter-spacing:.3em; color:var(--red); text-transform:uppercase}
+.sh-title{font-size:34px; color:#14223e}
+.r{display:flex; justify-content:space-between; align-items:baseline; gap:14px; font-size:25px}
+.r .y{flex:none; font-size:21px; color:#c23a2b}
+.r .to{color:#7d8cab; margin-right:6px}
+.sheet .m{--c:#1b2a4a; color:var(--c); font-family:"Caveat",cursive; font-weight:700; font-size:1.2em; padding:0 2px; border-radius:4px; transition:background .2s}
+.sheet .m sub{font-size:.62em}
+.sheet.done .m.pl{background:color-mix(in srgb, var(--c) 13%, transparent)}
+.sheet .m{transition:background .6s}
+.sheet .m.k{cursor:pointer}
+.sheet .m.k:hover{background:color-mix(in srgb, var(--c) 22%, transparent)}
+.sh-res{font-size:25px}
+.sh-res .v{display:inline-block; position:relative; font-family:"Caveat",cursive; font-weight:700; font-size:40px; color:#c23a2b; padding:0 14px; margin-right:10px}
+.sh-res .v::after{content:""; position:absolute; inset:2px -2px -2px; border:2.5px solid #c23a2b; border-radius:48% 52% 44% 56% / 58% 50% 54% 46%; transform:rotate(-4deg); clip-path:inset(0 100% 0 0)}
+.sh-res .v.on::after{animation:circ .7s ease-out forwards}
+@keyframes circ{to{clip-path:inset(0 0 0 0)}}
+.sh-full{font-size:21px; line-height:40px}
+.sh-full summary{cursor:pointer; color:#2f5aa8; list-style:none}
+.sh-full summary::before{content:"✎ "}
+.hw{display:inline-block; clip-path:inset(-35% 105% -35% -8%)}
+.slider{position:absolute; left:76px; right:28px; bottom:64px; border:1.5px solid #1b2a4a; border-radius:10px 14px 9px 12px; background:rgba(255,255,255,.6); padding:6px 14px 8px; display:none; font-family:"Long Cang",var(--hand)}
+.slider.show{display:block; animation:fade .4s}
+.slider .row{display:flex; justify-content:space-between; align-items:baseline; font-size:20px; color:#1b2a4a}
+.slider .m{font-family:"Caveat",cursive; font-weight:700; font-size:1.15em}
+.slider .deg{font-family:"Caveat",cursive; font-size:28px; color:var(--orange)}
+.slider.ok{border-color:var(--green)}
+.slider.ok .deg{color:var(--green)}
+.slider input{width:100%; accent-color:var(--orange)}
+.sh-hint{position:absolute; left:76px; bottom:22px; font-size:12px; color:#9a9383; font-style:italic}
+/* fountain pen: nib at the element's origin, barrel rising up and back toward the writer's right hand */
+.pen,.pen-sh{position:absolute; left:0; top:0; width:0; height:0; pointer-events:none; transform-style:preserve-3d; transition:transform .09s linear}
+.pen .ax{position:absolute; left:0; top:0; transform-style:preserve-3d; transform:rotateZ(28deg) rotateY(-34deg)}
+.pen-sh i{position:absolute; left:4px; top:-6px; width:250px; height:12px; transform-origin:0 50%; transform:rotate(38deg) scaleX(.95); background:linear-gradient(90deg, rgba(20,15,5,.4), rgba(20,15,5,.1)); filter:blur(5px); border-radius:6px}
+.fade{animation:fade .45s ease}
+@keyframes fade{from{opacity:0; transform:translateY(6px)}}
+
+/* the 3D figure that grows out of the page is drawn here, projected with the same camera as the book */
+#pop{position:fixed; inset:0; width:100%; height:100%; z-index:1; pointer-events:none}
+#pop .hit{pointer-events:all; cursor:grab}
+
+/* ---------- 2D overlays ---------- */
+.light{position:fixed; inset:0; pointer-events:none; z-index:2;
+  background:radial-gradient(130% 100% at 40% 35%, transparent 50%, rgba(20,8,2,.6))}
+/* afternoon sun: warm grade top-left → cool shade bottom-right */
+.grade{position:fixed; inset:0; pointer-events:none; z-index:2; mix-blend-mode:soft-light;
+  background:linear-gradient(128deg, rgba(255,176,86,.7) 0%, rgba(255,160,80,.35) 38%, rgba(120,90,140,.25) 75%, rgba(40,30,80,.5) 100%)}
+.rays{position:fixed; inset:-10%; pointer-events:none; z-index:2; mix-blend-mode:screen; filter:blur(18px); animation:rays 9s ease-in-out infinite alternate;
+  background:
+    linear-gradient(212deg, transparent 10%, rgba(255,205,140,.20) 16%, transparent 23%),
+    linear-gradient(212deg, transparent 26%, rgba(255,205,140,.13) 30%, rgba(255,205,140,.04) 36%, transparent 40%),
+    linear-gradient(212deg, transparent 44%, rgba(255,205,140,.09) 48%, transparent 54%),
+    radial-gradient(60% 50% at 8% 0%, rgba(255,214,150,.35), transparent 70%)}
+@keyframes rays{from{opacity:.75; transform:translateX(-12px)} to{opacity:1; transform:translateX(12px)}}
+#dust{position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; mix-blend-mode:screen}
+/* window light cast on the desk & book (world space, just above the pages) */
+.sun{left:-1700px; top:-1400px; width:3800px; height:2800px; transform:translateZ(-.5px); pointer-events:none}
+.sun.on-pages{position:absolute; left:0; top:0; width:1232px; height:812px; transform:translateZ(.6px); z-index:1; opacity:.55}
+.topbar{position:fixed; top:0; left:0; right:0; z-index:3; height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; color:rgba(255,240,220,.75); font-size:13.5px; letter-spacing:.08em; pointer-events:none}
+.topbar b{color:#fff6e6; font-weight:600}
+.dock{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:4; display:flex; align-items:center; gap:14px; background:rgba(250,248,242,.94); border:1px solid rgba(0,0,0,.08); border-radius:40px; padding:8px 10px 8px 20px; box-shadow:0 10px 30px -8px rgba(0,0,0,.6); font-size:13.5px; max-width:calc(100vw - 32px)}
+.dock .dots{display:flex; gap:5px}
+.dock .dots i{width:7px; height:7px; border-radius:50%; background:#d6cfbf}
+.dock .dots i.on{background:var(--navy)}
+.dock button{border:0; background:var(--navy); color:#fff; border-radius:30px; padding:7px 14px; font:inherit; cursor:pointer; white-space:nowrap}
+.g-normal,.g-demo{display:flex; align-items:center; gap:14px}
+.g-demo{display:none}
+body.demo .g-normal{display:none}
+body.demo .g-demo{display:flex}
+.dock .tabs{display:flex; background:#ece6d8; border-radius:30px; padding:3px}
+.dock .tabs button{background:none; color:#6b675f; padding:5px 12px; font-size:13px}
+.dock .tabs button.on{background:#fff; color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.15); font-weight:600}
+.dock .sdots{display:flex; gap:5px}
+.dock .sdots i{width:8px; height:8px; border-radius:50%; background:#d6cfbf; cursor:pointer; transition:.25s}
+.dock .sdots i.on{background:var(--violet); width:20px; border-radius:6px; box-shadow:0 0 8px rgba(124,92,255,.6)}
+.dock .ghost{background:#fff; color:var(--navy); box-shadow:inset 0 0 0 1.5px var(--navy)}
+.dock #prev{background:#fff; color:var(--navy); box-shadow:inset 0 0 0 1.5px var(--navy)}
+.dock #prev:disabled{opacity:.3; cursor:default}
+.dock .x{background:none; color:#6b675f; font-size:16px; padding:6px 8px}
+@media (max-width:700px){ .dock .msg{display:none} .topbar span:last-child{display:none} }
+
+/* ---------- intro: a classmate (keyed green-screen video) asks the question, then the camera drops to the desk ---------- */
+.topbar,.dock{transition:opacity .8s}
+body.intro .topbar, body.intro .dock{opacity:0; pointer-events:none}
+/* the classroom (and the desk itself) are drawn by three.js on #gl underneath the CSS scene */
+#gl{position:fixed; inset:0; width:100%; height:100%; display:block; pointer-events:none}
+body.gl .desk{width:3600px; height:1950px; left:-1800px; top:-1100px; background:none}   /* keep in sync with DESK in the script */
+body.gl #sun{display:none}
+.room{width:0; height:0}
+.room .f3{backface-visibility:visible}
+.girl3 video{width:100%; height:100%; display:block; object-fit:contain}
+.say{position:fixed; left:0; top:0; z-index:5; max-width:min(440px, 60vw); padding:16px 26px 18px; border-radius:26px 30px 28px 22px;
+  background:#fffdf6; color:#1b2a4a; font-family:"Long Cang",var(--hand); font-size:clamp(26px,3.6vh,40px); line-height:1.25; letter-spacing:.04em;
+  box-shadow:0 14px 34px -10px rgba(0,0,0,.55), inset 0 0 0 2px #1b2a4a; opacity:0; transform:translateY(8px) scale(.94); transform-origin:0 100%; transition:opacity .35s, transform .45s cubic-bezier(.3,1.6,.6,1)}
+.say::before{content:""; position:absolute; left:-16px; bottom:16px; width:30px; height:22px; background:#fffdf6; clip-path:polygon(0 100%,100% 0,100% 70%); filter:drop-shadow(-2px 0 0 #1b2a4a)}
+.say.on{opacity:1; transform:none}
+.say.gone{opacity:0; transform:translateY(-10px); transition:opacity .4s, transform .4s}
+.say span{opacity:0; transition:opacity .12s}
+.say span.v{opacity:1}
+.intro-ui{position:fixed; inset:0; z-index:6; pointer-events:none; transition:opacity .5s}
+.intro-ui button{pointer-events:auto; font:inherit; cursor:pointer; border:0}
+.intro-ui .start{position:absolute; left:50%; bottom:5vh; transform:translateX(-50%); background:rgba(250,248,242,.94); color:var(--navy); border-radius:40px; padding:12px 28px; font-size:16px; letter-spacing:.08em; box-shadow:0 10px 30px -8px rgba(0,0,0,.6); display:none}
+.intro-ui.ask .start{display:block; animation:fade .4s}
+.intro-ui .skip{position:absolute; right:24px; bottom:22px; background:rgba(20,10,4,.35); color:rgba(255,240,220,.8); border-radius:20px; padding:6px 14px; font-size:13px; letter-spacing:.1em}
+body:not(.intro) .intro-ui{opacity:0}
+.sound{position:fixed; left:24px; bottom:22px; z-index:6; border:0; cursor:pointer; background:rgba(20,10,4,.35); color:rgba(255,240,220,.85); border-radius:20px; padding:6px 14px; font:13px var(--serif); letter-spacing:.1em}
+.sound.off{color:rgba(255,240,220,.45); text-decoration:line-through}
+body:not(.intro) .intro-ui button{pointer-events:none}
+
+/* ======================================================================
+   edu-math-book additions (general lesson shell)
+   ====================================================================== */
+/* KaTeX: printed pages keep the book's ink, the scratch sheet uses the fountain-pen blue */
+.katex{font-size:1.04em}
+.page .katex{color:#1f1e1c}
+.sheet .katex{color:var(--c,#1b2a4a); font-size:.92em}
+.sheet .kx{display:inline-block; vertical-align:baseline}
+.keybox .f .katex{font-size:.86em}
+.opt .katex{font-size:.92em}
+/* long chains: the sheet tightens its ruling instead of overflowing */
+.sheet.dense{background:var(--noise), linear-gradient(90deg, transparent 60px, rgba(214,74,74,.45) 60px 61.5px, transparent 61.5px),
+    repeating-linear-gradient(180deg, transparent 0 35px, rgba(70,110,180,.22) 35px 36px) 0 30px / 100% 616px no-repeat, linear-gradient(180deg,#fefcf6,#faf6ea)}
+.sheet.dense .sh-in{line-height:36px}
+.sheet.dense .r{font-size:21px} .sheet.dense .r .y{font-size:17px} .sheet.dense .sh-title{font-size:28px}
+.sheet.denser{background:var(--noise), linear-gradient(90deg, transparent 60px, rgba(214,74,74,.45) 60px 61.5px, transparent 61.5px),
+    repeating-linear-gradient(180deg, transparent 0 29px, rgba(70,110,180,.22) 29px 30px) 0 30px / 100% 616px no-repeat, linear-gradient(180deg,#fefcf6,#faf6ea)}
+.sheet.denser .sh-in{line-height:30px}
+.sheet.denser .r{font-size:18px} .sheet.denser .r .y{font-size:15px} .sheet.denser .sh-title{font-size:24px}
+.r .e{min-width:0}
+/* left page auto-fit: content is scaled down as a whole when a long problem would overflow */
+.left .content .fit{transform-origin:0 0}
+.opts{flex-wrap:wrap; row-gap:4px}
+.keybox .f{line-height:1.25}
+/* "none" renderer: the right page becomes a formula board */
+.fboard{position:absolute; left:46px; right:44px; top:46px; height:440px; display:flex; flex-direction:column; justify-content:center; gap:14px; padding:0 10px}
+.fboard .fl{font-size:20px; line-height:1.5; color:#1f1e1c; opacity:.92}
+.fboard .fl.k{color:var(--red)}
+.fboard .fl .katex{font-size:1.12em}
+.fboard .note{font-family:var(--hand); color:#2a4a8a; font-size:17px; transform:rotate(-2deg)}
+body.fig-none .drag-hint, body.fig-plane .drag-hint{display:none}
+body.fig-plane #flat, body.fig-none #flat{cursor:default}
+.left .content .fit{transform-style:preserve-3d}

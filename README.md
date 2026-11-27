@@ -246,6 +246,19 @@ python3 build_audio.py --preview && node render.mjs motion && node render.mjs st
 python3 build_audio.py && node render.mjs video 6
 ```
 
+## Skill: edu-math-book
+
+Turns **any high-school math problem** into an interactive "workbook open on a desk" page: the left page carries the problem, key ideas, the questions and a predict-then-lift-the-flap quiz; the right page has a pencil-sketch figure. In demo mode the figure stands up off the page while a fountain pen writes each reasoning chain on scratch paper; coloured symbols highlight the matching parts of the figure, and sliders let students experiment. Optional **classroom intro** (a classmate asks the question on video, music, a WebGL classroom, then the camera drops to the desk).
+
+Three renderers cover all of high-school math: `solid` (polyhedra with automatic edges/visibility + cylinders/cones/spheres), `plane` (function & derivative graphs, conics, plane geometry, bar charts — it pops up like a pop-up card), and `none` (sequences, inequalities, counting/probability — the right page becomes a formula board). Each problem is one `lesson.js`; the whole shell lives in the template.
+
+```bash
+python3 skills/edu-math-book/scripts/generate.py lesson.js out/index.html     # add --intro for the classroom intro
+node skills/edu-math-book/scripts/check.mjs out/index.html                   # screenshots of every step + errors/lint
+```
+
+Examples live in `skills/edu-math-book/examples/` (right prism, tetrahedron + intro, cubic zeros, sequence).
+
 ## How it works
 
 1. **Get a problem spec** — normalize all three entry points into a structured description (body type and dimensions, given conditions, the quantity asked, language).
@@ -305,13 +318,20 @@ edulab/
     │   ├── scripts/
     │   ├── examples/laser-curvature/  # geometric-optics example
     │   └── reference/
-    └── edu-chem-video/          # chemistry explainer videos — GLM-TTS + chalkboard canvas → web preview (MP4 optional)
+    ├── edu-chem-video/          # chemistry explainer videos — GLM-TTS + chalkboard canvas → web preview (MP4 optional)
+    │   ├── SKILL.md
+    │   ├── template/            # chalkboard theme (engine.js · chem.js · anim.js)
+    │   ├── shared/
+    │   ├── scripts/             # plus chem_check.py — balance and conservation check
+    │   ├── examples/equilibrium/    # ICE-table / equilibrium example
+    │   └── reference/
+    └── edu-math-book/           # desk-and-book interactive workbook — all high-school math (solid / plane / none) + optional classroom intro
         ├── SKILL.md
-        ├── template/            # chalkboard theme (engine.js · chem.js · anim.js)
-        ├── shared/
-        ├── scripts/             # plus chem_check.py — balance and conservation check
-        ├── examples/equilibrium/    # ICE-table / equilibrium example
-        └── reference/
+        ├── template/            # shell: book.html · core.js · renderers.js · props.js · scene.js · intro_gl.js
+        ├── assets/intro/        # intro media (video, music, wood textures), copied only with --intro
+        ├── scripts/             # generate.py · check.mjs
+        ├── examples/            # solid_prism · solid_pyramid · plane_function · none_sequence
+        └── references/          # lesson-schema.md · renderers.md · pedagogy.md
 ```
 
 ## Extending

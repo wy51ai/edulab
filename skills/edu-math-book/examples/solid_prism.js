@@ -1,0 +1,107 @@
+// 直三棱柱 ABC-A1B1C1：中位线证线面平行 + 线面角定边长 + 线面距离（原 test-paper/index.html）
+// C 为原点，CA 沿 x，CB 沿 y，CC1 向上；AC = BC = a（滑块参数），CC1 = 2。答案 a = 2，距离 = 1（sympy 已核）
+const DE = {a: 'D', b: 'E', c: 'violet', w: 3.4, glow: 1};
+const BC1 = {a: 'B', b: 'C1', c: 'orange', w: 3.4, glow: 1};
+const angLabel = a => deg(Math.atan(a / 2)).toFixed(1) + '°';
+
+const LESSON = {
+  no: 15, score: '13 分', topic: '立体几何', topicEn: 'Geometry',
+  chapter: '第三章 · 空间直线与平面', chapterEn: 'Solid Geometry',
+  title: '中点里的直三棱柱',
+  subtitle: 'A right prism, two midpoints, one hidden parallel.',
+  stem: '如图，在直三棱柱 $ABC-A1B1C1$ 中，∠$ACB$ = 90°，$AC$ = $BC$，$D$、$E$ 分别为 $AB$、$AC1$ 的中点。',
+  key: {scribble: '两个中点<br>+ 公共顶点<br>→ 中位线！', formula: '线 ∥ 线 &nbsp;⟹&nbsp; 线 ∥ 面', caption: '线面平行的判定定理 —— 本题的钥匙'},
+  keywords: [['中位线', '三角形两边中点的连线，平行于第三边且等于它的一半。'], ['线面角', '斜线与它在平面内的射影所成的角。'], ['线面距离', '直线 ∥ 平面时，直线上任一点到平面的距离。']],
+  predict: {
+    q: '直线 $DE$ 到平面 $BCC1B1$ 的距离是？',
+    options: ['√2⁄2', '1', '√2', '2'], answer: 1,
+    explain: '关键：$DE$ ∥ $BC1$，线面距 = 点 $D$ 到面的距离 = ½$AC$。',
+    part: 1, challenge: '换坐标法再算一遍，<br>看看是不是也得 1。',
+    dockMsg: '你的回合：先在左页猜一个距离',
+  },
+  given: '直棱柱：侧棱 ⊥ 底面<br>∠$ACB$ = 90°，$AC$ = $BC$<br>$CC1$ = 2，$DE$ 与面 $ACC1A1$ 成 45°',
+  legend: [{kind: 'line', c: 'violet', t: '要研究的线 $DE$'}, {kind: 'plane', c: 'blue', t: '平面 $BCC1B1$'}, {kind: 'plane', c: 'pink', t: '平面 $ACC1A1$'}],
+  methods: ['综合法', '坐标法'],
+  props: {sticky: '第15题<br>先猜，再算 ✓<br>中位线!'},
+
+  figure: {
+    type: 'solid',
+    caption: '直三棱柱 $ABC-A1B1C1$ · 双击复位',
+    model(a) {
+      const P = {C: [0, 0, 0], A: [a, 0, 0], B: [0, a, 0], C1: [0, 0, 2], A1: [a, 0, 2], B1: [0, a, 2]};
+      P.D = mid(P.A, P.B); P.E = mid(P.A, P.C1); P.M = mid(P.B, P.C); P.N = mid(P.C, P.C1);
+      return P;
+    },
+    faces: [['A', 'B', 'C'], ['A1', 'B1', 'C1'], ['A', 'C', 'C1', 'A1'], ['B', 'C', 'C1', 'B1'], ['A', 'B', 'B1', 'A1']],
+    param: {def: 2, min: .8, max: 3.6, step: .01, snap: .08, label: '拖动改变 $BC$（= $AC$）', show: a => a.toFixed(2),
+            read: (a, ok) => '∠$BC1C$ = ' + angLabel(a) + (ok ? ' ✓' : '')},
+    labelDir: {D: [0, 1], E: [-1, -.2], M: [.3, -1], N: [-1, 0]},
+    baseSpec: {labels: ['D', 'E'], lines: [{a: 'A', b: 'C1', c: 'ink', w: 1.2, dash: 1}, {a: 'D', b: 'E', c: 'ink', w: 1.2, dash: 1}]},
+  },
+
+  parts: [
+    {q: '证明：$DE$ ∥ 平面 $BCC1B1$', hover: 2, steps: [
+      {h: '看到中点，先想中位线',
+       chain: [['$D$ 是 $AB$ 的中点', '已知'], ['$E$ 是 $AC1$ 的中点', '已知'], ['$AB$ 与 $AC1$ 共端点 $A$', '只差一边成三角形']],
+       cmap: {D: 'violet', E: 'violet', AB: 'orange', AC1: 'orange'},
+       spec: {view: 150, labels: ['D', 'E'],
+         lines: [{a: 'A', b: 'B', c: 'orange', w: 3, glow: 1}, {a: 'A', b: 'C1', c: 'orange', w: 3, glow: 1}],
+         ticks: [['A', 'D', 1], ['D', 'B', 1], ['A', 'E', 2], ['E', 'C1', 2]],
+         pts: [{p: 'D', c: 'violet'}, {p: 'E', c: 'violet'}],
+         tag: {at: 'E', text: 'AE = EC₁', c: 'orange'}}},
+      {h: '连 BC₁，DE 成了中位线',
+       chain: [['在 △$ABC1$ 中，$D$、$E$ 为两边中点', '构造三角形'], ['$DE$ ∥ $BC1$', '中位线定理'], ['$DE$ = ½ $BC1$', '中位线定理']],
+       cmap: {ABC1: 'orange', D: 'violet', E: 'violet', DE: 'violet', BC1: 'orange'},
+       spec: {view: 135, labels: ['D', 'E'],
+         planes: [{pts: ['A', 'B', 'C1'], c: 'orange'}],
+         lines: [{a: 'A', b: 'C1', c: 'ink', w: 1.2, dash: 1}, DE, BC1], anim: slide('D', 'E', ['D', 'B']),
+         tag: {at: ['B', 'C1'], text: 'DE ∥ BC₁', c: 'orange'}}},
+      {h: '线 ∥ 线 ⟹ 线 ∥ 面',
+       chain: [['$DE$ ∥ $BC1$', '上一步'], ['$BC1$ ⊂ 平面 $BCC1B1$', '侧面上的对角线'], ['$DE$ ⊄ 平面 $BCC1B1$', '这一条别漏写'], ['$DE$ ∥ 平面 $BCC1B1$', '判定定理 ∎']],
+       cmap: {DE: 'violet', BC1: 'blue', BCC1B1: 'blue'},
+       full: '∵ $D$、$E$ 分别为 $AB$、$AC1$ 的中点，∴ $DE$ ∥ $BC1$。<br>又 $BC1$ ⊂ 平面 $BCC1B1$，$DE$ ⊄ 平面 $BCC1B1$，<br>∴ $DE$ ∥ 平面 $BCC1B1$。',
+       spec: {view: -50, labels: ['D', 'E'],
+         planes: [{pts: ['B', 'C', 'C1', 'B1'], c: 'blue'}],
+         lines: [{a: 'A', b: 'C1', c: 'ink', w: 1.2, dash: 1}, DE, {...BC1, c: 'blue'}], anim: slide('D', 'E', ['D', 'M']),
+         tag: {at: ['D', 'E'], text: 'DE ∥ 面 BCC₁B₁', c: 'violet'}}},
+    ]},
+    {q: '设 $CC1$ = 2，$DE$ 与平面 $ACC1A1$ 成 45°，求 $DE$ 到平面 $BCC1B1$ 的距离', hover: 1, steps: [
+      {h: '把 DE 换成 BC₁',
+       chain: [['$DE$ ∥ $BC1$', '第 (1) 问'], ['$DE$、$BC1$ 与面 $ACC1A1$ 所成角相等', '平行线同角']],
+       cmap: {DE: 'violet', BC1: 'orange', ACC1A1: 'pink'},
+       spec: {view: 55, labels: ['D', 'E'],
+         planes: [{pts: ['A', 'C', 'C1', 'A1'], c: 'pink'}],
+         lines: [DE, BC1], anim: slide('D', 'E', ['D', 'B']),
+         tag: {at: ['B', 'C1'], text: '与 DE 同角', c: 'orange'}}},
+      {h: '找垂线，定射影',
+       chain: [['$BC$ ⊥ $AC$', '∠ACB = 90°'], ['$BC$ ⊥ $CC1$', '直棱柱'], ['$BC$ ⊥ 平面 $ACC1A1$', '线面垂直判定'], ['所成角 = ∠$BC1C$', 'C₁C 是射影']],
+       cmap: {BC: 'green', CC1: 'pink', ACC1A1: 'pink', BC1C: 'orange'},
+       spec: {view: 60, planes: [{pts: ['A', 'C', 'C1', 'A1'], c: 'pink'}],
+         lines: [{a: 'B', b: 'C', c: 'green', w: 3.6, glow: 1}, BC1, {a: 'C', b: 'C1', c: 'pink', w: 3, glow: 1}],
+         right: [{v: 'C', p: 'B', q: 'A', c: 'green'}, {v: 'C', p: 'B', q: 'C1', c: 'green'}],
+         angles: [{v: 'C1', p: 'B', q: 'C', c: 'orange', label: '?'}],
+         tag: {at: 'C', text: 'BC ⊥ 面 ACC₁A₁', c: 'green'}}},
+      {h: '拖动滑块，让角等于 45°',
+       chain: [['tan∠$BC1C$ = $BC$ ⁄ $CC1$', 'Rt△BCC₁'], ['$BC$ ⁄ 2 = tan 45° = 1', '代入'], ['$BC$ = $AC$ = 2', '等腰直角']],
+       cmap: {BC1C: 'orange', BC: 'green', CC1: 'pink', AC: 'green'},
+       spec: {view: -60, a: 3.2, slider: true,
+         planes: [{pts: ['B', 'C', 'C1'], c: 'orange'}],
+         lines: [{a: 'B', b: 'C', c: 'green', w: 3.4, glow: 1}, BC1, {a: 'C', b: 'C1', c: 'pink', w: 3, glow: 1}],
+         right: [{v: 'C', p: 'B', q: 'C1', c: 'green'}],
+         angles: [{v: 'C1', p: 'B', q: 'C', c: 'orange', label: angLabel}],
+         edgeLabels: [{a: 'C', b: 'C1', t: '2', c: 'pink'}, {a: 'B', b: 'C', t: a => a.toFixed(2), c: 'green'}]}},
+      {h: '线面距 ⟹ 点面距',
+       chain: [['$DE$ ∥ 面，取点 $D$ 即可', '线上各点等距'], ['取 $BC$ 中点 $M$，$DM$ ∥ $AC$', '中位线'], ['$AC$ ⊥ 平面 $BCC1B1$', 'AC ⊥ BC、CC₁'], ['$DM$ ⊥ 面，$d$ = $DM$ = ½$AC$', '']],
+       result: {k: '$d$', v: '1', note: '即 DE 到平面 BCC₁B₁ 的距离'},
+       cmap: {DE: 'violet', D: 'violet', M: 'violet', DM: 'violet', BC: 'ink', AC: 'green', BCC1B1: 'blue'},
+       full: '由 (1) $DE$ ∥ $BC1$，故 $BC1$ 与平面 $ACC1A1$ 成 45°。<br>∵ $BC$ ⊥ $AC$，$BC$ ⊥ $CC1$，∴ $BC$ ⊥ 平面 $ACC1A1$，∠$BC1C$ = 45°，$BC$ = $CC1$ = 2。<br>取 $BC$ 中点 $M$，$DM$ ∥ $AC$ 且 $DM$ = 1；$AC$ ⊥ 平面 $BCC1B1$ ⇒ $DM$ ⊥ 平面 $BCC1B1$。<br>又 $DE$ ∥ 平面 $BCC1B1$，∴ 所求距离为 $DM$ = 1。' +
+         '<br><i>坐标法：</i>$C$ 为原点，$D$(1,1,0)，平面 $BCC1B1$ 为 x = 0，距离即 1。',
+       spec: {view: -25, labels: ['D', 'M'],
+         planes: [{pts: ['B', 'C', 'C1', 'B1'], c: 'blue'}],
+         lines: [{a: 'A', b: 'C', c: 'green', w: 2.4, op: .7}, DE, {a: 'D', b: 'M', c: 'violet', w: 3.6, glow: 1, grow: 1.2}],
+         right: [{v: 'M', p: 'D', q: 'B', c: 'violet'}, {v: 'M', p: 'D', q: P => add(P.M, [0, 0, 1]), c: 'violet'}],
+         edgeLabels: [{a: 'D', b: 'M', t: '1', c: 'violet', flip: 1}],
+         tag: {at: ['D', 'M'], text: 'd = DM = 1', c: 'violet'}}},
+    ]},
+  ],
+};
