@@ -2,14 +2,16 @@
   "name": "edu-math-video-lesson",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test test/*.test.mjs" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
   "dependencies": {
-    "playwright": "1.48.2",
+    "@fontsource/jetbrains-mono": "5.1.0",
+    "@fontsource/noto-sans-sc": "5.1.0",
+    "@fontsource/noto-serif-sc": "5.1.0",
+    "@fontsource/zcool-kuaile": "5.1.0",
     "katex": "0.16.9",
     "lxgw-wenkai-webfont": "1.7.0",
-    "@fontsource/noto-serif-sc": "5.1.0",
-    "@fontsource/noto-sans-sc": "5.1.0",
-    "@fontsource/zcool-kuaile": "5.1.0",
-    "@fontsource/jetbrains-mono": "5.1.0"
+    "playwright": "1.55.1"
   }
 }
